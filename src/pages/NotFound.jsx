@@ -1,6 +1,6 @@
 function NotFound() {
 	return <div>
-		<h1 className="text-white ">Not Found</h1>
+		<h1 className="not-found ">Not Found</h1>
 	</div>
 }
 

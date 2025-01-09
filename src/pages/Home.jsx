@@ -26,7 +26,7 @@ useEffect(() => {
 
       return (
        <>
-       <Sidebar/>
+        {/*<Sidebar/>*/}
        </>
 
 

@@ -10,11 +10,12 @@ import { formatDate } from '../utility_function/formatDate';
 import { ModuleProvider, useModuleContext } from "./ModuleContext";
 import { Button } from "react-bootstrap";
 import UserTable from './UserTable';
+import RolesTable from './RolesTable';
 import AddUser from './AddUser'; // Import the modal
 
 
 
-const UserComponent = () => {
+const UserRoles = () => {
 
   const { modules, setModules, accessPermissions, setAccessPermissions } = useModuleContext();
   const permissions = accessPermissions;
@@ -35,28 +36,23 @@ const UserComponent = () => {
 
 
   const fetchData = async () => {
-     
+      if (token) {
+        const config = {
+          headers: { Authorization: `CTGI7a00fn ${token}` },
+          withCredentials: true,
+        };
 
         try {
-          const response = await api.get('/mrp/employees/');
-          const employees = response.data.map((employee) => ({
-            first_name: employee.user.first_name,
-            last_name: employee.user.last_name,
-            email: employee.user.email,
-            employee_number: employee.id,
-            user_role: employee.role[0].role,
-            supervisor: employee.superior ? employee.superior.full_name : "-",
-            last_login: employee.user.last_login ? employee.user.last_login : "-",
-            mobile_number: employee.cellphone_number,
-            agency: "Agency A",
-            status: employee.user.is_active ? "Active" : "Disabled",
-          }));
-          setData(employees);
+          const response = await api.get(`/mrp/roles/`, config);
+          console.log(response)
+          setData(response.data);
           setLoading(false);
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
-      
+      } else {
+        console.error('No access token found');
+      }
     };
 
   useEffect(() => {
@@ -99,8 +95,8 @@ const UserComponent = () => {
     <div className="container-fluid mt-4 px-4">
       {accessPermissions.some(permission => permission.codename === 'view_user') && (
         <>
-          <h3 className="text-center mb-4">User Details</h3>
-          <UserTable data={data} table={tableRef} hasMore={true} />
+          <h3 className="text-center mb-4">Role Groups</h3>
+          <RolesTable data={data} table={tableRef} hasMore={true} />
         </>
       )}
 
@@ -123,4 +119,4 @@ const UserComponent = () => {
   );
 };
 
-export default UserComponent;
+export default UserRoles;
