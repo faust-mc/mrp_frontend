@@ -32,7 +32,7 @@ const UserComponent = () => {
     supervisor: "",
     department: "",
     area: [],
-    permissions: []
+    permissions: {}
   });
   
   const tableRef = useRef(null);

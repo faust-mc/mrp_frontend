@@ -22,14 +22,15 @@ const AddUser = ({ modalOpen, handleCloseModal, handleSubmit, newEmployee, handl
 
 
 const handlePermissionChange = (e, permission, action) => {
-  console.log(permission)
-  const updatedPermissions = { ...newEmployee.permissions };
-  if (!updatedPermissions[permission.name]) {
-    updatedPermissions[permission.name] = {};
-  }
-  updatedPermissions[permission.name][action] = e.target.checked;
-  setNewEmployee({ ...newEmployee, permissions: updatedPermissions });
-};
+    console.log(permission)
+    const updatedPermissions = { ...newEmployee.permissions };
+    console.log(updatedPermissions)
+    if (!updatedPermissions[permission.name]) {
+      updatedPermissions[permission.name] = {};
+    }
+    updatedPermissions[permission.name][action] = e.target.checked;
+    setNewEmployee({ ...newEmployee, permissions: updatedPermissions });
+  };
 
 
   const getModules = () => {
@@ -264,7 +265,7 @@ useEffect(()=>{
                     <tr key={index}>
                       <td>{permission.components}</td>
                       <td>
-                        <Form.Check type="checkbox" onChange={(e) => handlePermissionChange(e, permission, "view")} />
+                        <Form.Check type="checkbox" onChange={(e) => handlePermissionChange(e, permission, "view_"+permission.slug)} />
                       </td>
                       <td>
                         <Form.Check type="checkbox" onChange={(e) => handlePermissionChange(e, permission, "add")} />

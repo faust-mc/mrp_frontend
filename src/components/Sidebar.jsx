@@ -62,8 +62,8 @@ const Sidebar = () => {
           .get(`/mrp/employees/${userId}/`, config)
           .then((response) => {
             const results = response.data;
-            setAccessPermissions(results.access_permissions);
-            setModules(results.access);
+            setAccessPermissions(results.module_permissions);
+            setModules(results.modules);
           })
           .catch((error) => {
             console.error("Error fetching modules", error);
