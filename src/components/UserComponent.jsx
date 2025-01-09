@@ -29,6 +29,10 @@ const UserComponent = () => {
     role: "",
     supervisor: "",
     mobile_number: "",
+    supervisor: "",
+    department: "",
+    area: [],
+    permissions: []
   });
   
   const tableRef = useRef(null);
@@ -76,20 +80,26 @@ const UserComponent = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const config = {
-        headers: { Authorization: `CTGI7a00fn ${token}` },
-        withCredentials: true,
-      };
+  e.preventDefault();
+  console.log(newEmployee);
+  console.log('----')
+  try {
+    const config = {
+      headers: { Authorization: `CTGI7a00fn ${token}` },
+      withCredentials: true,
+    };
 
-      await api.post('/mrp/employees/', newEmployee, config);
-      setModalOpen(false);
-      fetchData();
-    } catch (error) {
-      console.error("Error adding employee:", error);
-    }
-  };
+    // Send POST request to add a new employee
+    await api.post('/mrp/employees/', newEmployee, config);
+
+    // Close modal and refresh user data
+    setModalOpen(false);
+    fetchData();
+  } catch (error) {
+    console.error("Error adding employee:", error);
+  }
+};
+
 
   if (loading) {
     return <div className="text-center mt-4">Loading...</div>;
@@ -117,6 +127,7 @@ const UserComponent = () => {
         handleSubmit={handleSubmit}
         newEmployee={newEmployee}
         handleInputChange={handleInputChange}
+        setNewEmployee={setNewEmployee}
         
       />
     </div>

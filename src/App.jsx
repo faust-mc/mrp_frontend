@@ -8,6 +8,7 @@ import RestrictRoute from './components/RestrictRoute';
 import Sidebar from './components/Sidebar'; // Import Sidebar
 import Home from './pages/Home';
 import Reports from './pages/Reports';
+import Logs from './pages/Logs';
 import Mrp from './pages/Mrp';
 import User from './components/UserComponent';
 import UserRoles from './components/UserRoles';
@@ -43,9 +44,9 @@ function AppRoutes() {
               path="/"
               element={
                 <ProtectedRoute>
-                   <RestrictRoute modules={modules} requiredModuleSlug="masterdata">
+                 
                   <Home />
-                    </RestrictRoute>
+                
                 </ProtectedRoute>
               }
             />
@@ -109,17 +110,17 @@ function AppRoutes() {
                 
               }
             />
+            
             <Route
-              path="/container-details/:containerId"
+              path="/logs/daily"
               element={
-               
-                 <ProtectedRoute>
-                  <RestrictRoute modules={modules} requiredModuleSlug="reports">
-                  <ContainerDetails />
-                   </RestrictRoute>
+                
+                <ProtectedRoute>
+                <RestrictRoute modules={modules} requiredModuleSlug="logs">
+                  <Logs />
+                  </RestrictRoute>
                 </ProtectedRoute>
-
-               
+                
               }
             />
           </Route>

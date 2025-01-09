@@ -10,15 +10,30 @@ import { ACCESS_TOKEN } from "../constants";
 
 const animatedComponents = makeAnimated();
 
-const AddUser = ({ modalOpen, handleCloseModal, handleSubmit, newEmployee, handleInputChange }) => {
+const AddUser = ({ modalOpen, handleCloseModal, handleSubmit, newEmployee, handleInputChange, setNewEmployee }) => {
 
     const [modules, setModules] = useState([]);
     const [areas, setAreas] = useState([]);
+    const [roles, setRoles] = useState([]);
+    const [departments, setDepartments] = useState([])
+    const [supervisors, setSupervisors] = useState([])
     const token = localStorage.getItem(ACCESS_TOKEN);
 
 
+
+const handlePermissionChange = (e, permission, action) => {
+  console.log(permission)
+  const updatedPermissions = { ...newEmployee.permissions };
+  if (!updatedPermissions[permission.name]) {
+    updatedPermissions[permission.name] = {};
+  }
+  updatedPermissions[permission.name][action] = e.target.checked;
+  setNewEmployee({ ...newEmployee, permissions: updatedPermissions });
+};
+
+
   const getModules = () => {
-    if (token) {
+    
       try {
         const config = {
           headers: { Authorization: `CTGI7a00fn ${token}` },
@@ -26,10 +41,19 @@ const AddUser = ({ modalOpen, handleCloseModal, handleSubmit, newEmployee, handl
         };
 
         api
-          .get(`/mrp/combined-modules/`, config)
+          .get(`/mrp/for-forms/`, config)
           .then((response) => {
             const results = response.data;
-            setModules(results);
+            console.log(results.areas);
+            setModules(results.modules);
+            const areaOptions = results.areas.map((area) => ({
+              value: area.location, // 'value' is the location
+              label: area.location, // 'label' is also the location
+            }));
+            setAreas(areaOptions);
+            setRoles(results.roles);
+            setDepartments(results.departments);
+            setSupervisors(results.supervisors);
           })
           .catch((error) => {
             console.error("Error fetching modules", error);
@@ -37,50 +61,17 @@ const AddUser = ({ modalOpen, handleCloseModal, handleSubmit, newEmployee, handl
       } catch (error) {
         console.error("Error decoding token", error);
       }
-    } else {
-      console.error("No access token found");
-    }
+    
   };
 
 
- const getAreas = () => {
-  if (token) {
-    try {
-      const config = {
-        headers: { Authorization: `CTGI7a00fn ${token}` },
-        withCredentials: true,
-      };
-
-      api
-        .get(`/mrp/area-list/`, config)
-        .then((response) => {
-          const results = response.data;
-          
-          // Transform the data to the required format
-          const areaOptions = results.map((area) => ({
-            value: area.location, // 'value' is the location
-            label: area.location, // 'label' is also the location
-          }));
-          
-          setAreas(areaOptions); // Set the transformed data to state
-        })
-        .catch((error) => {
-          console.error("Error fetching modules", error);
-        });
-    } catch (error) {
-      console.error("Error decoding token", error);
-    }
-  } else {
-    console.error("No access token found");
-  }
-};
 
 
 
 
 useEffect(()=>{
     getModules()
-    getAreas()
+    
 }, [])
 
 
@@ -91,7 +82,7 @@ useEffect(()=>{
         <Modal.Title>Add New Employee</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <Form onSubmit={handleSubmit}>
+        <Form onSubmit={(e) => handleSubmit(e, newEmployee)}> {/* Passing newEmployee to handleSubmit */}
           <Row>
             <Col md={6}>
               <Form.Group controlId="formFirstName">
@@ -136,18 +127,28 @@ useEffect(()=>{
               </Form.Group>
             </Col>
             <Col md={6}>
-              <Form.Group controlId="formDepartment">
-                <Form.Label>Department</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="department"
-                  value={newEmployee.department}
-                  onChange={handleInputChange}
-                  className="wider-field"
-                  required
-                />
-              </Form.Group>
-            </Col>
+  <Form.Group controlId="formRole">
+    <Form.Label>Department</Form.Label>
+    <Form.Control
+      as="select" // Change input type to select
+      name="department"
+      value={newEmployee.department}
+      onChange={handleInputChange}
+      className="wider-field"
+      required
+    >
+      <option value="" disabled>
+        Select Department
+      </option>
+      {departments.map((dept) => (
+        <option key={dept.id} value={dept.id}>
+          {dept.department}
+        </option>
+      ))}
+    </Form.Control>
+  </Form.Group>
+</Col>
+
           </Row>
 
           <Row>
@@ -180,31 +181,58 @@ useEffect(()=>{
           </Row>
 
           <Row>
+             <Col md={6}>
+  <Form.Group controlId="formRole">
+    <Form.Label>Supervisor</Form.Label>
+    <Form.Control
+      as="select" // Change input type to select
+      name="supervisor"
+      value={newEmployee.supervisor}
+      onChange={handleInputChange}
+      className="wider-field"
+      required
+    >
+      <option value="" disabled>
+        Supervisor
+      </option>
+      {supervisors.map((sup) => (
+        <option key={sup.id} value={sup.id}>
+          {sup.user__first_name} {sup.user__last_name}
+        </option>
+      ))}
+    </Form.Control>
+  </Form.Group>
+</Col>
             <Col md={6}>
-              <Form.Group controlId="formSupervisor">
-                <Form.Label>Supervisor</Form.Label>
-                <Select />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group controlId="formRole">
-                <Form.Label>Role</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="role"
-                  value={newEmployee.role}
-                  onChange={handleInputChange}
-                  className="wider-field"
-                  required
-                />
-              </Form.Group>
-            </Col>
+  <Form.Group controlId="formRole">
+    <Form.Label>Role</Form.Label>
+    <Form.Control
+      as="select" // Change input type to select
+      name="role"
+      value={newEmployee.role}
+      onChange={handleInputChange}
+      className="wider-field"
+      required
+    >
+      <option value="" disabled>
+        Select a role
+      </option>
+      {roles.map((role) => (
+        <option key={role.id} value={role.id}>
+          {role.role}
+        </option>
+      ))}
+    </Form.Control>
+  </Form.Group>
+</Col>
+
           </Row>
           <Row>
             <Col md={12}>
                 <Form.Group controlId="area">
                    <Form.Label>Area</Form.Label>
                   <Select
+                       name="area"
                       closeMenuOnSelect={false}
                       components={animatedComponents}
                       defaultValue={[]}
