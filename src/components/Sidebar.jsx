@@ -8,7 +8,7 @@ import "../styles/Sidebars.css";
 import "../styles/Sidebar_main.css";
 import {jwtDecode} from "jwt-decode";
 import { useModuleContext } from "./ModuleContext";
-import { Modal, Button, Form, Row, Col, Table   } from "react-bootstrap";
+import { Modal, Button, Form, Row, Col, Table, Alert } from "react-bootstrap";
 
 
 const Sidebar = () => {
@@ -26,6 +26,7 @@ const Sidebar = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [countdown, setCountdown] = useState(5);
   const [error, setError] = useState(null);
+  const [userDetails,setUserDetails] = useState(null);
 
   const handleSignOut = () => {
     navigate("/logout");
@@ -53,17 +54,13 @@ const Sidebar = () => {
           console.error("User ID not found in token");
           return;
         }
-        const config = {
-          headers: { Authorization: `CTGI7a00fn ${token}` },
-          withCredentials: true,
-        };
-
         api
-          .get(`/mrp/employees/${userId}/`, config)
+          .get(`/mrp/employees/${userId}/`)
           .then((response) => {
             const results = response.data;
             setAccessPermissions(results.module_permissions);
             setModules(results.modules);
+            setUserDetails(results.user.first_name)
           })
           .catch((error) => {
             console.error("Error fetching modules", error);
@@ -77,6 +74,8 @@ const Sidebar = () => {
   useEffect(() => {
     getModules();
   }, []);
+
+
 
 
     const handleShowWarning = () => setShowWarning(true);
@@ -96,13 +95,13 @@ const Sidebar = () => {
     }
 
     try {
-      const response = await api.post('/tr/change-password/', {
+      const response = await api.post('/mrp/change-password/', {
         old_password: oldPassword,
         new_password: newPassword,
         confirm_password: confirmPassword
       }, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('ACCESS_TOKEN')}`
+          'Authorization': `CTGI7a00fn ${localStorage.getItem('ACCESS_TOKEN')}`
         }
       });
 
@@ -244,7 +243,7 @@ const Sidebar = () => {
                 height={32}
                 className="rounded-circle me-2"
               />
-              {!isCollapsed && <strong>Fausto</strong>}
+              {!isCollapsed && <strong>{userDetails}</strong>}
             </a>
             <ul className="dropdown-menu dropdown-menu-dark text-small shadow">
               <li>

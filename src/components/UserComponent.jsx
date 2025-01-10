@@ -47,7 +47,6 @@ const UserComponent = () => {
 
   const fetchData = async () => {
      
-
         try {
           const response = await api.get('/mrp/employees/');
           const employees = response.data.map((employee) => ({
@@ -62,6 +61,7 @@ const UserComponent = () => {
             agency: "Agency A",
             status: employee.user.is_active ? "Active" : "Disabled",
           }));
+          
           setData(employees);
           setLoading(false);
         } catch (error) {
@@ -104,13 +104,8 @@ const UserComponent = () => {
   e.preventDefault();
 
   try {
-    const config = {
-      headers: { Authorization: `CTGI7a00fn ${token}` },
-      withCredentials: true,
-    };
-
     // Send POST request to add a new employee
-    const response = await api.post('/mrp/employees/', newEmployee, config);
+    const response = await api.post('/mrp/employees/', newEmployee);
 
     
       const message = response.data.message;

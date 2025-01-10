@@ -18,7 +18,7 @@ function UserTable({data, tableRef, hasMore}) {
 const [isResponsive, setIsResponsive] = useState(true);
 
  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: '' });
-    const [currentPage, setCurrentPage] = useState(1); // State to keep track of the current page
+    const [currentPage, setCurrentPage] = useState(1); //state to keep track of the current page
  const handleSort = (key) => {
         let direction = 'asc';
         if (sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -26,12 +26,12 @@ const [isResponsive, setIsResponsive] = useState(true);
         }
         setSortConfig({ key, direction });
 
-        // Fetch sorted tickets from parent component
+        //fetch sorted tickets from parent component
         getTickets(key, currentPage, direction);
     };
 
     const handleNextPage = () => {
-        if (hasMore) { // Only move to the next page if there are more tickets
+        if (hasMore) { //only move to the next page if there are more data
             setCurrentPage(prevPage => {
                 const nextPage = prevPage + 1;
                 getTickets(sortConfig.key, nextPage, sortConfig.direction);
@@ -108,8 +108,7 @@ const [isResponsive, setIsResponsive] = useState(true);
                     <td>{row.user_role}</td>
                     <td>{row.supervisor}</td>
                     <td>{row.email}</td>
-                    <td>{row.last_login ? formatDate(String(row.last_login)) : "N/A"}</td>
-
+                    <td>{row.last_login ? formatDate(row.last_login.toString()) : "N/A"}</td>
                     <td>{row.mobile_number}</td>
                     <td>{row.agency}</td>
                     <td>{row.status}</td>

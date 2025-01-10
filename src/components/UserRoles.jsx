@@ -36,12 +36,7 @@ const UserRoles = () => {
 
 
   const fetchData = async () => {
-      if (token) {
-        const config = {
-          headers: { Authorization: `CTGI7a00fn ${token}` },
-          withCredentials: true,
-        };
-
+        
         try {
           const response = await api.get(`/mrp/roles/`, config);
           console.log(response)
@@ -50,9 +45,7 @@ const UserRoles = () => {
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
-      } else {
-        console.error('No access token found');
-      }
+     
     };
 
   useEffect(() => {
