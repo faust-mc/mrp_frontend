@@ -3,11 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 function RestrictRoute({ children, modules, requiredModuleSlug }) {
   const navigate = useNavigate();
-  console.log("res---")
- console.log(modules)
- console.log()
- console.log(requiredModuleSlug)
- console.log("trict---")
+ 
   useEffect(() => {
     // Only run the check after modules are loaded
     if (modules.length === 0) {

@@ -18,19 +18,34 @@ const AddUser = ({ modalOpen, handleCloseModal, handleSubmit, newEmployee, handl
     const [departments, setDepartments] = useState([])
     const [supervisors, setSupervisors] = useState([])
     const token = localStorage.getItem(ACCESS_TOKEN);
-
+  
 
 
 const handlePermissionChange = (e, permission, action) => {
-    console.log(permission)
+    
+    //console.log(permission)
+    if (permission.slug.toUpperCase() != permission.module.toUpperCase()) {
+      newEmployee.submodules.push(permission.id);
+      newEmployee.submodules = [...new Set(newEmployee.submodules)];
+    }
+    else {
+      newEmployee.modules.push(permission.id);
+      newEmployee.modules = [...new Set(newEmployee.modules)];
+    }
+   
     const updatedPermissions = { ...newEmployee.permissions };
-    console.log(updatedPermissions)
+    
     if (!updatedPermissions[permission.name]) {
       updatedPermissions[permission.name] = {};
     }
     updatedPermissions[permission.name][action] = e.target.checked;
     setNewEmployee({ ...newEmployee, permissions: updatedPermissions });
   };
+
+
+const handleChangeArea = (e, value) => {
+  console.log(value);
+}
 
 
   const getModules = () => {
@@ -45,7 +60,7 @@ const handlePermissionChange = (e, permission, action) => {
           .get(`/mrp/for-forms/`, config)
           .then((response) => {
             const results = response.data;
-            console.log(results.areas);
+          
             setModules(results.modules);
             const areaOptions = results.areas.map((area) => ({
               value: area.location, // 'value' is the location
@@ -236,10 +251,17 @@ useEffect(()=>{
                        name="area"
                       closeMenuOnSelect={false}
                       components={animatedComponents}
-                      defaultValue={[]}
+                      defaultValue={newEmployee.area}
                       isMulti
                       options={areas}
-                    />
+                      onChange={(selectedOptions) => {
+          const selectedValues = selectedOptions.map(option => option.value);
+          setNewEmployee({
+            ...newEmployee,
+            area: selectedValues, // Save selected values to newEmployee state
+          });
+        }}
+      />
     
               </Form.Group>
             </Col>
@@ -268,16 +290,16 @@ useEffect(()=>{
                         <Form.Check type="checkbox" onChange={(e) => handlePermissionChange(e, permission, "view_"+permission.slug)} />
                       </td>
                       <td>
-                        <Form.Check type="checkbox" onChange={(e) => handlePermissionChange(e, permission, "add")} />
+                        <Form.Check type="checkbox" onChange={(e) => handlePermissionChange(e, permission, "add_"+permission.slug)} />
                       </td>
                       <td>
-                        <Form.Check type="checkbox" onChange={(e) => handlePermissionChange(e, permission, "edit")} />
+                        <Form.Check type="checkbox" onChange={(e) => handlePermissionChange(e, permission, "edit_"+permission.slug)} />
                       </td>
                       <td>
-                        <Form.Check type="checkbox" onChange={(e) => handlePermissionChange(e, permission, "delete")} />
+                        <Form.Check type="checkbox" onChange={(e) => handlePermissionChange(e, permission, "delete_"+permission.slug)} />
                       </td>
                       <td>
-                        <Form.Check type="checkbox" onChange={(e) => handlePermissionChange(e, permission, "generate_report")} />
+                        <Form.Check type="checkbox" onChange={(e) => handlePermissionChange(e, permission, "generate_report_"+permission.slug)} />
                       </td>
                     </tr>
                   ))}

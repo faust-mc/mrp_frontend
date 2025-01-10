@@ -8,9 +8,10 @@ import "../styles/UserComponent.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { formatDate } from '../utility_function/formatDate';
 import { ModuleProvider, useModuleContext } from "./ModuleContext";
-import { Button } from "react-bootstrap";
+import { Button, Modal } from "react-bootstrap";
 import UserTable from './UserTable';
 import AddUser from './AddUser'; // Import the modal
+
 
 
 
@@ -22,6 +23,9 @@ const UserComponent = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [countdown, setCountdown] = useState(0);
   const [newEmployee, setNewEmployee] = useState({
     first_name: "",
     last_name: "",
@@ -29,9 +33,12 @@ const UserComponent = () => {
     role: "",
     supervisor: "",
     mobile_number: "",
+    telephone_number:"",
     supervisor: "",
     department: "",
     area: [],
+    modules: [],
+    submodules: [],
     permissions: {}
   });
   
@@ -79,10 +86,23 @@ const UserComponent = () => {
     setNewEmployee({ ...newEmployee, [e.target.name]: e.target.value });
   };
 
+  const startCountdown = (seconds) => {
+    setCountdown(seconds);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setSuccessModalOpen(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   const handleSubmit = async (e) => {
   e.preventDefault();
-  console.log(newEmployee);
-  console.log('----')
+
   try {
     const config = {
       headers: { Authorization: `CTGI7a00fn ${token}` },
@@ -90,11 +110,21 @@ const UserComponent = () => {
     };
 
     // Send POST request to add a new employee
-    await api.post('/mrp/employees/', newEmployee, config);
+    const response = await api.post('/mrp/employees/', newEmployee, config);
 
-    // Close modal and refresh user data
-    setModalOpen(false);
-    fetchData();
+    
+      const message = response.data.message;
+      
+    setModalMessage(message);
+      setModalOpen(false);
+      setSuccessModalOpen(true);
+      startCountdown(10); 
+
+      setTimeout(() => {
+        fetchData();
+      }, 20000); // 10 seconds
+
+
   } catch (error) {
     console.error("Error adding employee:", error);
   }
@@ -130,6 +160,21 @@ const UserComponent = () => {
         setNewEmployee={setNewEmployee}
         
       />
+
+      <Modal show={successModalOpen} onHide={() => setSuccessModalOpen(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Success</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>{modalMessage}</p>
+          <p>Closing in {countdown} seconds...</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={() => setSuccessModalOpen(false)}>
+            Close Now
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

@@ -1,10 +1,8 @@
 export const formatDate = (dateString) => {
-  // Create a Date object from the ISO string
-  const date = new Date(dateString);
 
-  // Ensure the date is valid
+  const date = new Date(dateString);
   if (isNaN(date)) {
-    throw new Error("Invalid ISO date string format. Expected YYYY-MM-DDTHH:mm:ssZ.");
+    return `-`;
   }
 
   // Format the date part

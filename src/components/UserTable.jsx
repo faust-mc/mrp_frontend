@@ -108,7 +108,8 @@ const [isResponsive, setIsResponsive] = useState(true);
                     <td>{row.user_role}</td>
                     <td>{row.supervisor}</td>
                     <td>{row.email}</td>
-                    <td>{row.last_login ? formatDate(row.last_login.toString()) : "N/A"}</td>
+                    <td>{row.last_login ? formatDate(String(row.last_login)) : "N/A"}</td>
+
                     <td>{row.mobile_number}</td>
                     <td>{row.agency}</td>
                     <td>{row.status}</td>
