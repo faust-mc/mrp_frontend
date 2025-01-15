@@ -1,0 +1,199 @@
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+html {
+  height: -webkit-fill-available;
+}
+
+main {
+  height: 100vh;
+  height: -webkit-fill-available;
+  max-height: 100vh;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.dropdown-toggle { outline: 0; }
+
+.btn-toggle {
+  padding: .25rem .5rem;
+  font-weight: 600;
+  color: var(--bs-emphasis-color);
+  background-color: transparent;
+}
+.btn-toggle:hover,
+.btn-toggle:focus {
+  color: rgba(var(--bs-emphasis-color-rgb), .85);
+  background-color: var(--bs-tertiary-bg);
+}
+
+.btn-toggle::before {
+  width: 1.25em;
+  line-height: 0;
+  content: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='rgba%280,0,0,.5%29' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 14l6-6-6-6'/%3e%3c/svg%3e");
+  transition: transform .35s ease;
+  transform-origin: .5em 50%;
+}
+
+[data-bs-theme="dark"] .btn-toggle::before {
+  content: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='rgba%28255,255,255,.5%29' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 14l6-6-6-6'/%3e%3c/svg%3e");
+}
+
+.btn-toggle[aria-expanded="true"] {
+  color: rgba(var(--bs-emphasis-color-rgb), .85);
+}
+.btn-toggle[aria-expanded="true"]::before {
+  transform: rotate(90deg);
+}
+
+.btn-toggle-nav a {
+  padding: .1875rem .5rem;
+  margin-top: .125rem;
+  margin-left: 1.25rem;
+}
+.btn-toggle-nav a:hover,
+.btn-toggle-nav a:focus {
+  background-color: var(--bs-tertiary-bg);
+}
+
+.scrollarea {
+  overflow-y: auto;
+}
+
+
+/*collapse button*/
+
+.b-example-divider {
+  display: flex; /* Enables flexbox */
+  justify-content: center; /* Centers horizontally */
+  align-items: center; /* Centers vertically */
+  height: 100vh; /* Adjust height as needed */
+  width: 100%; /* Full width */
+  background-color: #f0f0f0; /* Optional for visual clarity */
+}
+
+.b-example-vr {
+  border: 1px solid #ddd; /* Optional: for divider styling */
+}
+
+.collapse_button {
+  cursor: pointer; /* Makes it clickable */
+  padding: 1.5px .5px;
+  background-color: #92a8d1; /* Button color */
+  color: white; /* Text color */
+  border: none; /* Removes default border */
+  border-radius: 5px; /* Adds rounded corners */
+  font-size: 16px; /* Adjust font size */
+  text-align: center; /* Centers the text */
+  user-select: none; /* Prevents text selection */
+  transition: background-color 0.3s ease; /* Adds hover effect */
+}
+
+.collapse_button:hover {
+  background-color: #034f84; /* Darker shade on hover */
+}
+
+
+/*collapse effect*/
+.sidebar {
+
+  overflow: hidden;
+  transition: width 0.3s ease, transform 0.3s ease;
+}
+
+.sidebar.collapsed .nav-link span {
+  display: none;
+}
+
+.sidebar.collapsed {
+  width: 80px;
+}
+
+.sidebar .toggle-btn {
+  align-self: flex-end;
+}
+
+.sidebar.collapsed .toggle-btn {
+  align-self: center;
+}
+
+.d-inline-flex{
+  color: #55ACEE ! important;
+  z-index: 2100;
+}
+
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 200px; /* Adjust size for mobile view */
+  }
+
+  .sidebar.collapsed {
+    width: 60px;
+  }
+
+  .toggle-btn {
+    position: relative;
+    z-index: 1050;
+  }
+
+  .content {
+    margin-left: 200px; /* Ensure content is shifted when sidebar is expanded */
+  }
+
+  .sidebar.collapsed ~ .content {
+    margin-left: 60px; /* Adjust margin for collapsed sidebar */
+  }
+}
+
+
+.main_component {
+  padding: 20px; /* Add some padding for content spacing */
+  overflow: auto; /* Handle any content overflow */
+  transition: width 0.3s; /* Smooth adjustment */
+}
+
+
+/* Styling for the submenu */
+.submenu {
+  padding-left: 20px; /* Indent the submenu to the right */
+  position: absolute; /* Position it relative to the parent */
+  left: 100%; /* Position it to the right of the parent */
+  top: 0; /* Align it to the top of the parent item */
+  background-color: #343a40; /* Match the dropdown's dark background */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Add some shadow for depth */
+  z-index: -0; /* Ensure it's above other dropdown content */
+}
+
+/* Optional: Add hover effect to make the submenu appear when the user hovers over the parent button */
+.dropdown-item:hover + .submenu {
+  display: block;
+}
+
+
+.sidebar {
+    z-index: 999
+}
+
+/* Custom styles to make the dropdown smaller */
+.mini-dropdown .dropdown-toggle {
+  font-size: 10px; /* Smaller font size for the button */
+  padding: 4px 8px; /* Smaller padding */
+  height: auto; /* Ensure the button height is minimized */
+}
+
+.mini-dropdown-menu {
+  font-size: 10px; /* Smaller font size for dropdown items */
+  padding: 2px 0; /* Reduce padding for dropdown items */
+  min-width: 100px; /* Optional: Control the width of the menu */
+}
+
+/* Optional: Adjust the size of the arrow */
+.mini-dropdown .dropdown-toggle::after {
+  font-size: 8px; /* Make the dropdown arrow smaller */
+}
+
+

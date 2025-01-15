@@ -1,0 +1,17 @@
+:root {
+    --nav-height: 3.5rem;
+    --light-mode-bg: #f1f1f1;
+    --light-mode-text: #333;
+    --dark-mode-bg: #212529;
+    --dark-mode-text: #f9f9f9;
+    --blue: #10208b;
+    --dark-maroon: #5c0000;
+    --step: #ddd;
+    --ongoing-step: #800000;
+    --completed-step: #58d68d;
+}
+
+/* Layout */
+.container.dark-mode {
+    background-color: rgba(57, 62, 70, 0.5);
+}

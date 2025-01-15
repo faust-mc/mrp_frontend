@@ -1,0 +1,96 @@
+:root {
+    --nav-height: 3.5rem;
+    --light-mode-bg: #f1f1f1;
+    --light-mode-text: #333;
+    --dark-mode-bg: #212529;
+    --dark-mode-text: #f9f9f9;
+    --blue: #10208b;
+    --dark-maroon: #5c0000;
+    --step: #ddd;
+    --ongoing-step: #800000;
+    --completed-step: #58d68d;
+}
+.container-fluid {
+    padding: 0;
+}
+.container {
+    min-width: 100vw;
+    min-height: 100vh;
+    top: 0;
+    left: 0;
+    padding: 0;
+    background-color: rgba(241, 241, 241, 0.5);
+    z-index: 2;
+}
+
+.container.dark-mode {
+    background-color: rgba(57, 62, 70, 0.5);
+}
+.navbar {
+    margin-bottom: var(--nav-height);
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: var(--nav-height);
+    background-color: var(--blue);
+    padding-right: 4rem;
+    color: var(--dark-mode-text);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+.checkbox {
+    opacity: 0;
+    position: absolute;
+}
+
+.checkbox-label {
+    background-color: var(--light-mode-text);
+    border: 1px solid var(--light-mode-text);
+    width: 50px;
+    height: 26px;
+    border-radius: 50px;
+    position: relative;
+    padding: 5px;
+    margin-left: auto;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+}
+
+.fa-moon {
+    color: #f1c40f;
+}
+
+.fa-sun {
+    color: #f39c12;
+}
+
+.checkbox-label .ball {
+    background-color: var(--dark-mode-text);
+    width: 22px;
+    height: 22px;
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    border-radius: 50%;
+    transition: transform 0.2s linear;
+}
+
+.checkbox:checked + .checkbox-label .ball {
+    transform: translateX(24px);
+}
+
+.dropdown-item:hover {
+    cursor: pointer;
+}
+
+@media (min-width: 320px) and (max-width: 425px) {
+    .logo-container img{
+        height: 2.2rem;
+    }
+    .navbar {
+        padding-right: 10px;
+    }
+}

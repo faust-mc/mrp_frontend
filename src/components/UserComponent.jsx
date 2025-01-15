@@ -1,0 +1,191 @@
+// UserComponent.jsx
+import React, { useEffect, useState, useRef } from "react";
+import api from "../api";
+import { ACCESS_TOKEN } from '../constants';
+import "bootstrap/dist/css/bootstrap.min.css";
+import "../styles/ActionableDataTable.css";
+import "../styles/UserComponent.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { formatDate } from '../utility_function/formatDate';
+import { ModuleProvider, useModuleContext } from "./ModuleContext";
+import { Button, Modal } from "react-bootstrap";
+import UserTable from './UserTable';
+import AddUser from './AddUser'; // Import the modal
+import Header from './Header'
+
+
+
+const UserComponent = () => {
+
+  const { modules, setModules, accessPermissions, setAccessPermissions } = useModuleContext();
+  const permissions = accessPermissions;
+  const token = localStorage.getItem(ACCESS_TOKEN);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [countdown, setCountdown] = useState(0);
+  const [newData, setNewData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    role: [],
+    supervisor: "",
+    mobile_number: "",
+    telephone_number:"",
+    supervisor: "",
+    department: "",
+    area: [],
+    modules: [],
+    submodules: [],
+    permissions: {}
+  });
+
+  const tableRef = useRef(null);
+
+
+  const fetchData = async () => {
+
+        try {
+          const response = await api.get('/mrp/employees/');
+
+          const employees = response.data.map((employee) => ({
+            first_name: employee.user.first_name,
+            last_name: employee.user.last_name,
+            email: employee.user.email,
+            employee_number: employee.id,
+            user_role: employee.role[0].role,
+            supervisor: employee.superior ? employee.superior.full_name : "-",
+            last_login: employee.user.last_login ? employee.user.last_login : "-",
+            mobile_number: employee.cellphone_number,
+            agency: "Agency A",
+            status: employee.user.is_active ? "Active" : "Disabled",
+          }));
+
+          setData(employees);
+          setLoading(false);
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+
+    };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleOpenModal = () => {
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+  };
+
+  const handleInputChange = (e) => {
+    setNewData({ ...newData, [e.target.name]: e.target.value });
+  };
+
+  const startCountdown = (seconds) => {
+    setCountdown(seconds);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setSuccessModalOpen(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  console.log(newData)
+
+
+  try {
+    // Send POST request to add a new employee
+    const response = await api.post('/mrp/employees/', newData);
+
+
+      const message = response.data.message;
+
+    setModalMessage(message);
+      setModalOpen(false);
+      setSuccessModalOpen(true);
+      startCountdown(10);
+
+      setTimeout(() => {
+        fetchData();
+      }, 20000); // 10 seconds
+
+
+  } catch (error) {
+    console.error("Error adding employee:", error);
+  }
+};
+
+
+  if (loading) {
+    return <div className="text-center mt-4">Loading...</div>;
+  }
+
+  return (
+      <>
+      <Header/>
+    <div className="container-fluid mt-4 px-4">
+
+      {accessPermissions.some(permission =>
+          permission.codename === 'view_user' ||
+          permission.codename === 'add_user' ||
+          permission.codename === 'delete_user' ||
+          permission.codename === 'edit_user'
+        ) && (
+          <>
+
+            <UserTable data={data} table={tableRef} hasMore={true} />
+          </>
+        )}
+
+
+      {accessPermissions.some(permission => permission.codename === 'add_user') && (
+        <div className="add-user">
+          <button className="btn btn-primary" onClick={handleOpenModal}>Add New</button>
+        </div>
+      )}
+
+      {/* Use AddEmployeeModal component here */}
+      <AddUser
+        modalOpen={modalOpen}
+        handleCloseModal={handleCloseModal}
+        handleSubmit={handleSubmit}
+        newData={newData}
+        handleInputChange={handleInputChange}
+        setNewData={setNewData}
+        compo = {'User'}
+      />
+
+      <Modal show={successModalOpen} onHide={() => setSuccessModalOpen(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Success</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>{modalMessage}</p>
+          <p>Closing in {countdown} seconds...</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={() => setSuccessModalOpen(false)}>
+            Close Now
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </div>
+    </>
+  );
+};
+
+export default UserComponent;
