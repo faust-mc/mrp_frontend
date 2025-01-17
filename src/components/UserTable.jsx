@@ -14,11 +14,13 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 
-function UserTable({data, tableRef, hasMore}) {
+function UserTable({data, tableRef, hasMore, modalOpen, setModalOpen, handleOpenModal}) {
 const [isResponsive, setIsResponsive] = useState(true);
 
  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: '' });
     const [currentPage, setCurrentPage] = useState(1); //state to keep track of the current page
+
+
  const handleSort = (key) => {
         let direction = 'asc';
         if (sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -114,7 +116,7 @@ const [isResponsive, setIsResponsive] = useState(true);
                     <td>{row.status}</td>
                     <td>
                       <div className="d-flex justify-content-center">
-                        <FontAwesomeIcon icon={faEdit} title="Edit" className="action-icon" />
+                        <FontAwesomeIcon icon={faEdit} title="Edit" className="action-icon"  onClick={()=>handleOpenModal(row.employee_number)} />
                         <FontAwesomeIcon icon={faUndo} title="Return" className="action-icon" />
                         <FontAwesomeIcon icon={faToggleOn} title="Toggle" className="action-icon" />
                         <FontAwesomeIcon icon={faSync} title="Refresh" className="action-icon" />

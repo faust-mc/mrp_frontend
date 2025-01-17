@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { Modal, Button, Form } from "react-bootstrap";
 
-function UserTable({ data, tableRef, hasMore }) {
+function RolesTable({ data, tableRef, hasMore, RolesTable, handleOpenModal }) {
   const [isResponsive, setIsResponsive] = useState(true);
   const [sortConfig, setSortConfig] = useState({ key: "id", direction: "" });
   const [currentPage, setCurrentPage] = useState(1); // State to keep track of the current page
@@ -65,7 +65,7 @@ function UserTable({ data, tableRef, hasMore }) {
                     icon={faEdit}
                     title="Edit"
                     className="action-icon"
-                    onClick={() => handleEditClick(row)}
+                    onClick={() => handleOpenModal(row.id)}
                     style={{ cursor: "pointer" }}
                   />
                   <FontAwesomeIcon
@@ -134,4 +134,4 @@ function UserTable({ data, tableRef, hasMore }) {
   );
 }
 
-export default UserTable;
+export default RolesTable;
