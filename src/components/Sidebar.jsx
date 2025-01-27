@@ -19,7 +19,7 @@ const Sidebar = () => {
   const location = useLocation();
   const [activeComponent, setActiveComponent] = useState(null);
   const navigate = useNavigate();
-
+  const [accessKey, setAccessKey] = useState([]);
    const [showWarning, setShowWarning] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
@@ -77,9 +77,24 @@ const Sidebar = () => {
   }, []);
 
 
+   const getAccessKeys = async () => {
 
+       try {
+         api
+          .get(`/mrp/accesskey-list/`)
+          .then((response) => {
+            const results = response.data;
+            setAccessKey(results);
+          })
+          .catch((error) => {
+            console.error("Error fetching modules", error);
+          });
+      } catch (error) {
+        console.error("Error decoding token", error);
+      }
+       }
 
-    const handleShowWarning = () => setShowWarning(true);
+  const handleShowWarning = () => setShowWarning(true);
   const handleCloseWarning = () => setShowWarning(false);
 
   const handleShowChangePassword = () => {
@@ -268,17 +283,24 @@ const Sidebar = () => {
           </div>
           <div className="d-flex justify-content-between w-100">
 
-      <Dropdown size="sm" className="mini-dropdown ms-auto">
-        <Dropdown.Toggle variant="secondary" id="dropdown-mini">
-         Access Key
-        </Dropdown.Toggle>
+      <Dropdown size="sm" className="mini-dropdown ms-auto" onClick={getAccessKeys}>
+  <Dropdown.Toggle variant="secondary" id="dropdown-mini">
+    Access Key
+  </Dropdown.Toggle>
 
-        <Dropdown.Menu className="mini-dropdown-menu">
-          <Dropdown.Item href="#/action-1">AB - 12 - ab</Dropdown.Item>
-          <Dropdown.Item href="#/action-2">CD - 34 - cd</Dropdown.Item>
-          <Dropdown.Item href="#/action-3">EF - 56 - ef</Dropdown.Item>
-        </Dropdown.Menu>
-      </Dropdown>
+  <Dropdown.Menu className="mini-dropdown-menu">
+    {Array.isArray(accessKey) && accessKey.length > 0 ? (
+      accessKey.map((item) => (
+        <Dropdown.Item key={item.id} href={`#/${item.id}`}>
+          {item.access_key}
+        </Dropdown.Item>
+      ))
+    ) : (
+      <Dropdown.Item disabled>No access keys available</Dropdown.Item>
+    )}
+  </Dropdown.Menu>
+</Dropdown>
+
     </div>
 
 {/*           end of dropdown */}

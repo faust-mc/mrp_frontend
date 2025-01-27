@@ -15,6 +15,8 @@ import Header from './Header'
 
 
 
+
+
 const UserComponent = () => {
 
   const { modules, setModules, accessPermissions, setAccessPermissions } = useModuleContext();
@@ -27,6 +29,8 @@ const UserComponent = () => {
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [countdown, setCountdown] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageCount, setPageCount] = useState()
   const [newData, setNewData] = useState({
     employee_id: "",
     first_name: "",
@@ -36,7 +40,6 @@ const UserComponent = () => {
     supervisor: "",
     mobile_number: "",
     telephone_number:"",
-    supervisor: "",
     department: "",
     area: [],
     modules: [],
@@ -47,25 +50,35 @@ const UserComponent = () => {
   const tableRef = useRef(null);
 
 
-  const fetchData = async () => {
+  const fetchData = async (page = 1, pageSize = 10, sortColumnIndex="user__first_name", sortDirection="asc", search="") => {
 
         try {
-          const response = await api.get('/mrp/employees/');
+          const response = await api.get('/mrp/employees/', {
 
-          const employees = response.data.map((employee) => ({
+            params: { page, pageSize,  sortColumnIndex, sortDirection, search},
+            });
+
+        let data = response.data.data;
+        let pagenumber = response.data.page_num_pages;
+
+
+          const employees = data.map((employee) => ({
             first_name: employee.user.first_name,
             last_name: employee.user.last_name,
             email: employee.user.email,
             employee_number: employee.id,
             user_role: employee.role[0]? employee.role[0].role: "-",
-            supervisor: employee.superior ? employee.superior.full_name : "-",
+            supervisor: employee.superior ? `${employee.superior.first_name} ${employee.superior.last_name}`: "-",
             last_login: employee.user.last_login ? employee.user.last_login : "-",
             mobile_number: employee.cellphone_number,
             agency: "Agency A",
             status: employee.user.is_active ? "Active" : "Disabled",
           }));
 
+
           setData(employees);
+
+          setPageCount(pagenumber);
           setLoading(false);
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -185,7 +198,7 @@ const handleOpenModal = async (id = null) => {
   const handleSubmit = async (e) => {
   e.preventDefault();
 
-  console.log(newData)
+
 
 
   try {
@@ -193,6 +206,7 @@ const handleOpenModal = async (id = null) => {
     const message = response.data.message;
 
     setModalMessage(message);
+      setCurrentPage(1)
       setModalOpen(false);
       setSuccessModalOpen(true);
       startCountdown(10);
@@ -207,19 +221,21 @@ const handleOpenModal = async (id = null) => {
   }
 };
 
+
+
 const handleEditSubmit = async (e) => {
     e.preventDefault();
 
 
     try {
       const response = await api.put(`/mrp/employee/edit/${newData.employee_id}/`, newData);
-       console.log(response)
 
       const message = response.data.message;
       setModalMessage(message);
       setModalOpen(false);
       setSuccessModalOpen(true);
       clearNewData()
+      setCurrentPage(1)
       startCountdown(1000);
 
       setTimeout(() => {
@@ -249,7 +265,7 @@ const handleEditSubmit = async (e) => {
         ) && (
           <>
 
-            <UserTable data={data} table={tableRef} hasMore={true} modalOpen={modalOpen} setModalOpen = {setModalOpen} handleOpenModal={handleOpenModal}/>
+            <UserTable data={data} table={tableRef}  modalOpen={modalOpen} setModalOpen = {setModalOpen} handleOpenModal={handleOpenModal} fetchData={fetchData} pageCount={pageCount} currentPage={currentPage} setCurrentPage={setCurrentPage}/>
           </>
         )}
 
@@ -270,6 +286,7 @@ const handleEditSubmit = async (e) => {
         setNewData={setNewData}
         buttonLabel = {loadEdit? "Update Employee": "Add Employee"}
         compo = {'User'}
+
       />
 
       <Modal show={successModalOpen} onHide={() => setSuccessModalOpen(false)} centered>

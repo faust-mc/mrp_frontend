@@ -52,3 +52,11 @@
 .bi-bell {
   cursor: pointer; /* Add a pointer cursor for the bell icon */
 }
+
+
+/* Keep the search bar visible even though searching is disabled */
+.dataTables_filter input {
+  display: block; /* Ensure the search input is displayed */
+  pointer-events: none; /* Disable interaction with the input */
+  opacity: 0.5; /* Optionally, make it look disabled */
+}
