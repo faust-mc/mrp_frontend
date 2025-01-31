@@ -2,11 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from "../api";
 import {ACCESS_TOKEN, REFRESH_TOKEN} from '../constants'
-import Header from '../components/Header'
-//import '../styles/ContainerDetails.css'
-
-
-
+import Header from '../components/HeaderComponents/Header'
 
 
 import {jwtDecode} from "jwt-decode";

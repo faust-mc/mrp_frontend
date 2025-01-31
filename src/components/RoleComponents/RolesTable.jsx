@@ -11,6 +11,7 @@ import {
 import { Modal, Button, Form } from "react-bootstrap";
 
 function RolesTable({ data, tableRef, hasMore, RolesTable, handleOpenModal }) {
+
   const [isResponsive, setIsResponsive] = useState(true);
   const [sortConfig, setSortConfig] = useState({ key: "id", direction: "" });
   const [currentPage, setCurrentPage] = useState(1); // State to keep track of the current page
@@ -21,17 +22,16 @@ function RolesTable({ data, tableRef, hasMore, RolesTable, handleOpenModal }) {
     setShowEditModal(true);
   };
 
-  // Handle modal close
+
   const handleCloseModal = () => setShowEditModal(false);
 
-  // Handle form submission inside the modal
+
   const handleSaveChanges = () => {
-    console.log("Edited Data:", editData);
-    // Add logic to save changes (e.g., API call)
+
     setShowEditModal(false);
   };
 
-  // Update editData when form inputs change
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditData((prevData) => ({

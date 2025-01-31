@@ -1,8 +1,8 @@
-import { formatDate } from '../utility_function/formatDate';
+import { formatDate } from '../../utility_function/formatDate';
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import "../styles/UserComponent.css";
-import { ACCESS_TOKEN } from '../constants';
+import "../../styles/UserComponent.css";
+import { ACCESS_TOKEN } from '../../constants';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faEdit,
@@ -17,8 +17,10 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css';
 import 'datatables.net-bs5';
 
-function UserTable({ data, tableRef, modalOpen, setModalOpen,handleOpenModal, fetchData , pageCount, currentPage, setCurrentPage}) {
+import { faPlus } from '@fortawesome/free-solid-svg-icons';
 
+function UserTable({ data, tableRef, modalOpen, setModalOpen,handleOpenModal, fetchData , pageCount, currentPage, setCurrentPage, accessPermissions}) {
+console.log(data)
   const [searchTerm, setSearchTerm] = useState(''); // State to store search term
   const token = localStorage.getItem(ACCESS_TOKEN);
   const searchInputRef = useRef(null);
@@ -28,6 +30,7 @@ function UserTable({ data, tableRef, modalOpen, setModalOpen,handleOpenModal, fe
      // State to keep track of the current page
 
   useEffect(() => {
+
     // Destroy any existing DataTable instance
     if ($.fn.dataTable.isDataTable('#dataTable')) {
       $('#dataTable').DataTable().destroy();
@@ -112,7 +115,7 @@ function UserTable({ data, tableRef, modalOpen, setModalOpen,handleOpenModal, fe
       }
 
     };
-  }, [data, handleOpenModal, fetchData]); // Re-run effect on data or fetchData change
+  }, [data, handleOpenModal]); // Re-run effect on data or fetchData change
 
 
 
@@ -128,40 +131,41 @@ const handleSort = (key) => {
   setLoading(true);
 
   fetchData(currentPage, pageSize, key, direction, searchTerm);
+  setLoading(false);
 };
 
 
 const handleNextPage = () => {
+
   if (currentPage < pageCount && !loading) {
-    setLoading(true); // Temporarily disable the button
+    setLoading(true);
     const nextPage = currentPage + 1;
 
     fetchData(nextPage, pageSize, sortConfig.key, sortConfig.direction, searchTerm)
       .then(() => {
-        setCurrentPage(nextPage); // Update the current page
+        setCurrentPage(nextPage);
       })
       .finally(() => {
-        setTimeout(() => setLoading(false), 500); // Re-enable the button after 500ms
+        setTimeout(() => setLoading(false), 500);
       });
   }
+
 };
 
 const handlePrevPage = () => {
   if (currentPage > 1 && !loading) {
-    setLoading(true); // Temporarily disable the button
+    setLoading(true);
     const prevPage = currentPage - 1;
 
     fetchData(prevPage, pageSize, sortConfig.key, sortConfig.direction, searchTerm)
       .then(() => {
-        setCurrentPage(prevPage); // Update the current page
+        setCurrentPage(prevPage);
       })
       .finally(() => {
-        setTimeout(() => setLoading(false), 500); // Re-enable the button after 500ms
+        setTimeout(() => setLoading(false), 500);
       });
   }
 };
-
-
 
  const handleSearch = (e) => {
     const query = e.target.value;
@@ -169,8 +173,6 @@ const handlePrevPage = () => {
     setCurrentPage(1)
     fetchData(1, pageSize, sortConfig.key, sortConfig.direction, query);
   };
-
-
 
 
   return (
@@ -201,6 +203,24 @@ const handlePrevPage = () => {
 
         {/* Search Bar */}
         <div className="d-flex justify-content-end">
+           {accessPermissions.some(permission => permission.codename === 'add_user') && (
+
+       <div className="position-relative">
+             <button
+    className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center add-user-btn"
+    style={{ width: '40px', height: '40px', borderRadius: '50%', position: 'relative', marginRight: '5px' }}
+    onClick={()=>handleOpenModal()}
+  >
+    <FontAwesomeIcon icon={faPlus} />
+  </button>
+
+  <span className="tooltip-text">Add New User</span>
+
+
+  </div>
+
+
+    )}
       <input
         ref={searchInputRef}
         type="text"

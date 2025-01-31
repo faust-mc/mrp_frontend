@@ -1,18 +1,18 @@
 // UserComponent.jsx
 import React, { useEffect, useState, useRef } from "react";
-import api from "../api";
-import { ACCESS_TOKEN } from '../constants';
+import api from "../../api";
+import { ACCESS_TOKEN } from '../../constants';
 import "bootstrap/dist/css/bootstrap.min.css";
-import "../styles/ActionableDataTable.css";
-import "../styles/UserComponent.css";
+import "../../styles/ActionableDataTable.css";
+import "../../styles/UserComponent.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { formatDate } from '../utility_function/formatDate';
-import { ModuleProvider, useModuleContext } from "./ModuleContext";
+import { formatDate } from '../../utility_function/formatDate';
+import { ModuleProvider, useModuleContext } from "../ControlComponents/ModuleContext";
 import { Button } from "react-bootstrap";
-import UserTable from './UserTable';
-import RolesTable from './RolesTable';
-import FormModal from './FormModal'; // Import the modal
-
+import UserTable from '../UserComponents/UserTable';
+import RolesTable from '../RoleComponents/RolesTable';
+import FormModal from '../Modals/FormModal'; // Import the modal
+import Header from '../HeaderComponents/Header'
 
 
 const UserRoles = () => {
@@ -30,6 +30,9 @@ const UserRoles = () => {
     role: "",
     area: [],
     modules: [],
+    roles: [],
+    copy_permissions: false,
+    copy_area: false,
     submodules: [],
     permissions: {}
   });
@@ -39,7 +42,7 @@ const UserRoles = () => {
   const fetchData = async () => {
         try {
           const response = await api.get(`/mrp/roles/`);
-
+           console.log(response)
           setData(response.data);
           setLoading(false);
         } catch (error) {
@@ -82,27 +85,21 @@ const handleOpenModal = async (id = null) => {
       value: area.location,
       id: area.id
     }));
-
+    const permissionsMap = role_data.permissions.reduce((acc, perm) => {
+            acc[perm.codename] = true;
+            return acc;
+          }, {});
     setNewRoleData({
       ...role_data,  // Copy the employee_data to retain its structure
 
       role: role_data.role,
       role_id: role_data.id,
       area: transformedAreas,
-      permissions: {
-        ...role_data.permissions,
-        undefined: {
-          ...(role_data.permissions?.undefined || {}),
-          ...role_data.permissions.reduce((acc, perm) => {
-            acc[perm.codename] = true;
-            return acc;
-          }, {}),
-        },
-      },
-      modules: [
-        ...role_data.modules.map(module => module.module) || [],
-        ...role_data.submodules.map(submodule => submodule.submodule) || []
-      ]
+      permissions: permissionsMap,
+//       modules: [
+//         ...role_data.modules.map(module => module.module) || [],
+//         ...role_data.submodules.map(submodule => submodule.submodule) || []
+//       ]
     });
   } catch (error) {
     console.error('Error fetching role data:', error);
@@ -115,11 +112,12 @@ const handleOpenModal = async (id = null) => {
   };
 
   const handleInputChange = (e) => {
-    setNewData({ ...newData, [e.target.name]: e.target.value });
+    setNewRoleData({ ...newRoleData, [e.target.name]: e.target.value });
   };
 
   const handleRoleSubmit = async (e) => {
     e.preventDefault();
+    console.log(newRoleData)
     try {
       await api.post('/mrp/roles/', newRoleData);
       setModalOpen(false);
@@ -130,7 +128,6 @@ const handleOpenModal = async (id = null) => {
       console.error("Error adding role:", error);
     }
   };
-
 
   const handleRoleEditSubmit = async (e) => {
     e.preventDefault();
@@ -159,6 +156,8 @@ const handleOpenModal = async (id = null) => {
   }
 
   return (
+      <>
+      <Header/>
     <div className="container-fluid mt-4 px-4">
       {accessPermissions.some(permission =>
           permission.codename === 'view_roles' ||
@@ -167,12 +166,12 @@ const handleOpenModal = async (id = null) => {
           permission.codename === 'edit_roles'
         ) && (
         <>
-          <h3 className="text-center mb-4">Role Groups</h3>
+{/*           <h3 className="text-center mb-4">Role Groups</h3> */}
           <RolesTable data={data} table={tableRef} hasMore={true} handleOpenModal={handleOpenModal}/>
         </>
       )}
 
-      {accessPermissions.some(permission => permission.codename === 'add_user') && (
+      {accessPermissions.some(permission => permission.codename === 'add_roles') && (
         <div className="add-user">
           <button className="btn btn-primary" onClick={()=>handleOpenModal()}>Add New</button>
         </div>
@@ -190,6 +189,7 @@ const handleOpenModal = async (id = null) => {
         compo = {'Roles'}
       />
     </div>
+    </>
   );
 };
 

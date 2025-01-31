@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import api from "../api";
-import {ACCESS_TOKEN, REFRESH_TOKEN} from '../constants'
+import api from "../../api";
+import {ACCESS_TOKEN, REFRESH_TOKEN} from '../../constants'
 
-import Sidebar from '../components/Sidebar'
-import Logo from '../components/Logo'
+//import Sidebar from './components/SidebarComponents/Sidebar'
+//import Logo from '../components/HeaderComponents/Logo'
 
 import {jwtDecode} from "jwt-decode";
 
@@ -43,7 +43,7 @@ function Header() {
 
   return (
     <div className="header-container d-flex justify-content-between align-items-center">
-      <h1 className="mx-auto">Welcome to homepage</h1>
+      <h1 className="mx-auto">CTGI MRP System</h1>
 
       {/* Bell Icon with Popover and Badge for Notification Count */}
       <OverlayTrigger

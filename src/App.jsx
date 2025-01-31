@@ -2,21 +2,21 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import React, { useState, useEffect } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
-import { UserProvider } from './components/UserContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import RestrictRoute from './components/RestrictRoute';
-import Sidebar from './components/Sidebar'; // Import Sidebar
+import { UserProvider } from './components/ControlComponents/UserContext';
+import ProtectedRoute from './components/ControlComponents/ProtectedRoute';
+import RestrictRoute from './components/ControlComponents/RestrictRoute';
+import Sidebar from './components/SidebarComponents/Sidebar'; // Import Sidebar
 import Home from './pages/Home';
 import Reports from './pages/Reports';
 import Logs from './pages/Logs';
 import Mrp from './pages/Mrp';
-import User from './components/UserComponent';
-import UserRoles from './components/UserRoles';
+import User from './components/UserComponents/UserComponent';
+import UserRoles from './components/RoleComponents/UserRoles';
 import NotFound from './pages/NotFound';
 import Transactional from './pages/Transactional';
 import Login from './pages/Login';
 import ContainerDetails from './pages/ContainerDetails';
-import { ModuleProvider, useModuleContext } from "./components/ModuleContext";
+import { ModuleProvider, useModuleContext } from "./components/ControlComponents/ModuleContext";
 
 
 function Logout() {

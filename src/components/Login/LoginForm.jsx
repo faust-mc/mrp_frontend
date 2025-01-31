@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'; // Import Toastify CSS
-import api from '../api';
+import api from '../../api';
 import { useNavigate } from 'react-router-dom';
-import { ACCESS_TOKEN, REFRESH_TOKEN } from '../constants';
-import '../styles/Login.css';
-import ctgiLogo from '../images/ctgi-logo.jpg';
+import { ACCESS_TOKEN, REFRESH_TOKEN } from '../../constants';
+import '../../styles/Login.css';
+import ctgiLogo from '../../images/ctgi-logo.jpg';
 
 function LoginForm({ route, method }) {
     const [username, setUsername] = useState("");

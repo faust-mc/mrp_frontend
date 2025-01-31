@@ -1,17 +1,17 @@
 // UserComponent.jsx
 import React, { useEffect, useState, useRef } from "react";
-import api from "../api";
-import { ACCESS_TOKEN } from '../constants';
+import api from "../../api";
+import { ACCESS_TOKEN } from '../../constants';
 import "bootstrap/dist/css/bootstrap.min.css";
-import "../styles/ActionableDataTable.css";
-import "../styles/UserComponent.css";
+import "../../styles/ActionableDataTable.css";
+import "../../styles/UserComponent.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { formatDate } from '../utility_function/formatDate';
-import { ModuleProvider, useModuleContext } from "./ModuleContext";
+import { formatDate } from '../../utility_function/formatDate';
+import { ModuleProvider, useModuleContext } from "../ControlComponents/ModuleContext";
 import { Button, Modal } from "react-bootstrap";
-import UserTable from './UserTable';
-import FormModal from './FormModal'; // Import the modal
-import Header from './Header'
+import UserTable from '../UserComponents/UserTable';
+import FormModal from '../Modals/FormModal'; // Import the modal
+import Header from '../HeaderComponents/Header'
 
 
 
@@ -59,16 +59,15 @@ const UserComponent = () => {
             });
 
         let data = response.data.data;
+
         let pagenumber = response.data.page_num_pages;
-
-
           const employees = data.map((employee) => ({
             first_name: employee.user.first_name,
             last_name: employee.user.last_name,
             email: employee.user.email,
             employee_number: employee.id,
-            user_role: employee.role[0]? employee.role[0].role: "-",
-            supervisor: employee.superior ? `${employee.superior.first_name} ${employee.superior.last_name}`: "-",
+            user_role: employee.role? employee.role.role: "-",
+            supervisor: employee.superior ? `${employee.superior.user.first_name} ${employee.superior.user.last_name}`: "-",
             last_login: employee.user.last_login ? employee.user.last_login : "-",
             mobile_number: employee.cellphone_number,
             agency: "Agency A",
@@ -110,6 +109,7 @@ const clearNewData = ()=> {
      }
 
 const handleOpenModal = async (id = null) => {
+
    clearNewData();
   if (id === null) {
     setModalOpen(true);  // Open the modal directly if id is null
@@ -121,18 +121,18 @@ const handleOpenModal = async (id = null) => {
     setLoadEdit(true);
     const response = await api.get(`/mrp/employeesplain/${id}/`);
 
+
     const employee_data = response.data;
-    const transformedRoles = employee_data.role.map((role) => ({
-      label: role.role,
-      value: role.role,
-      id: role.id
-    }));
 
     const transformedAreas = employee_data.area.map((area) => ({
       label: area.location,
       value: area.location,
       id: area.id
     }));
+const permissionsMap = employee_data.module_permissions.reduce((acc, perm) => {
+            acc[perm.codename] = true;
+            return acc;
+          }, {});
 
     setNewData({
       ...employee_data,
@@ -140,28 +140,18 @@ const handleOpenModal = async (id = null) => {
       first_name: employee_data.user.first_name,
       last_name: employee_data.user.last_name,
       email: employee_data.user.email,
-      supervisor: employee_data.superior,
+      supervisor: 3,
       department: employee_data.department.id,
       mobile_number: employee_data.cellphone_number,
       telephone_number: employee_data.telephone_number,
 
-      role: transformedRoles,
+      role: employee_data.role? employee_data.role.id:0,
       area: transformedAreas,
-      permissions: {
-        ...employee_data.permissions,
-        undefined: {
-          ...(employee_data.permissions?.undefined || {}),
-
-          ...employee_data.module_permissions.reduce((acc, perm) => {
-            acc[perm.codename] = true;
-            return acc;
-          }, {}),
-        },
-      },
+      permissions: permissionsMap,
 
       modules: [
         ...employee_data.modules.map(module => module.module) || [],
-        ...employee_data.submodules.map(submodule => submodule.submodule) || []
+
       ]
     });
   } catch (error) {
@@ -195,13 +185,38 @@ const handleOpenModal = async (id = null) => {
     }, 1000);
   };
 
+
+const getCheckedRows = () => {
+      alert()
+  const checkedComponents = [];
+  const tbody = document.getElementById("component_rows");
+  const rows = tbody.getElementsByTagName("tr");
+
+  for (let row of rows) {
+    const checkboxes = row.querySelectorAll("input[type='checkbox']");
+    if (Array.from(checkboxes).some((checkbox) => checkbox.checked)) {
+      const component = row.querySelector("td").innerText;
+      checkedComponents.push(component);
+    }
+  }
+
+  setNewData((prevState) => ({
+    ...prevState,
+    modules: Array.from(new Set([...prevState.modules, ...checkedComponents])),
+  }));
+
+  return checkedComponents;
+};
+
+
   const handleSubmit = async (e) => {
   e.preventDefault();
-
+    getCheckedRows()
 
 
 
   try {
+
     const response = await api.post('/mrp/employees/', newData);
     const message = response.data.message;
 
@@ -209,10 +224,10 @@ const handleOpenModal = async (id = null) => {
       setCurrentPage(1)
       setModalOpen(false);
       setSuccessModalOpen(true);
-      startCountdown(10);
+
 
       setTimeout(() => {
-        fetchData();
+    console.log()
       }, 1000); // 10 seconds
 
 
@@ -225,6 +240,7 @@ const handleOpenModal = async (id = null) => {
 
 const handleEditSubmit = async (e) => {
     e.preventDefault();
+    console.log(newData)
 
 
     try {
@@ -236,11 +252,11 @@ const handleEditSubmit = async (e) => {
       setSuccessModalOpen(true);
       clearNewData()
       setCurrentPage(1)
-      startCountdown(1000);
+
 
       setTimeout(() => {
-        fetchData();
-      }, 2000);
+            console.log()
+      }, 1000);
 
     } catch (error) {
       console.error("Error updating employee:", error);
@@ -265,16 +281,12 @@ const handleEditSubmit = async (e) => {
         ) && (
           <>
 
-            <UserTable data={data} table={tableRef}  modalOpen={modalOpen} setModalOpen = {setModalOpen} handleOpenModal={handleOpenModal} fetchData={fetchData} pageCount={pageCount} currentPage={currentPage} setCurrentPage={setCurrentPage}/>
+            <UserTable data={data} table={tableRef}  modalOpen={modalOpen} setModalOpen = {setModalOpen} handleOpenModal={handleOpenModal} fetchData={fetchData} pageCount={pageCount} currentPage={currentPage} setCurrentPage={setCurrentPage} accessPermissions={accessPermissions}/>
           </>
         )}
 
 
-      {accessPermissions.some(permission => permission.codename === 'add_user') && (
-        <div className="add-user">
-          <button className="btn btn-primary" onClick={()=>handleOpenModal()}>Add New</button>
-        </div>
-      )}
+
 
       {/* use AddEmployeeModal component here */}
       <FormModal

@@ -1,4 +1,4 @@
-import LoginForm from '../components/LoginForm'
+import LoginForm from '../components/Login/LoginForm'
 import { REFRESH_TOKEN, ACCESS_TOKEN } from '../constants';
 import {Navigate} from "react-router-dom";
 import { useState, useEffect } from 'react';
