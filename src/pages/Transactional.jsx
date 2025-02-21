@@ -1,80 +1,272 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import api from "../api";
+import ProgressBar from 'react-bootstrap/ProgressBar';
+import { Tab, Nav } from 'react-bootstrap';
+import { ACCESS_TOKEN } from '../constants';
+import { jwtDecode } from "jwt-decode";
 
 function Transactional() {
-  const [data, setData] = useState([]);
+  const token = localStorage.getItem(ACCESS_TOKEN);
+  const [uploadsEndingInventory, setUploadsEndingInventory] = useState([
+    { areaId: "", file: null, progress: 0, uploading: false, successMessage: "" }
+  ]);
+  const [uploadsSales, setUploadsSales] = useState({
+    file: null,
+    progress: 0,
+    uploading: false,
+    successMessage: ""
+  });
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [areas, setAreas] = useState([]);
+  const [samp, setSam] = useState([]);
+  const [userId, setUserId] = useState(null);
+  const [activeTab, setActiveTab] = useState("upload");
 
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) {
-      setError("No file selected.");
+  useEffect(() => {
+    if (!token) {
+      console.error("Token is missing");
+      return;
+    }
+
+    try {
+      const decodedToken = jwtDecode(token);
+      const extractedUserId = decodedToken.user_id;
+
+      if (!extractedUserId) {
+        console.error("User ID not found in token");
+        return;
+      }
+
+      setUserId(extractedUserId);
+    } catch (error) {
+      console.error("Error decoding token:", error);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    const fetchAreas = async () => {
+      if (!userId) return;
+
+      try {
+        const response = await api.get(`/mrp/get-area-option/${userId}/`);
+        setAreas(response.data.areas);
+      } catch (error) {
+        console.error("Error fetching areas:", error);
+      }
+    };
+
+    fetchAreas();
+  }, [userId]);
+
+  const handleInputChange = (index, field, value) => {
+    if (activeTab === "upload") {
+      const newUploads = [...uploadsEndingInventory];
+      newUploads[index][field] = value;
+      setUploadsEndingInventory(newUploads);
+    } else if (activeTab === "sales") {
+      setUploadsSales(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const addUploadField = () => {
+    setUploadsEndingInventory([...uploadsEndingInventory, { areaId: "", file: null, progress: 0, uploading: false, successMessage: "" }]);
+  };
+
+  const handleUpload = async (index) => {
+      
+    const { file, areaId } = activeTab === "upload" ? uploadsEndingInventory[index] : uploadsSales;
+
+    if (!file || (activeTab === "upload" && !areaId)) {
+      setError("Please select an area and a file before uploading.");
       return;
     }
 
     setError("");
-    setLoading(true);
 
     const formData = new FormData();
     formData.append("file", file);
+    if (activeTab === "upload") {
+      formData.append("area_id", areaId);
+    }
+
+    const setUploads = activeTab === "upload" ? setUploadsEndingInventory : setUploadsSales;
+    const uploads = activeTab === "upload" ? uploadsEndingInventory : uploadsSales;
+
+    setUploads(prevUploads => {
+      const newUploads = activeTab === "upload" ? [...prevUploads] : { ...prevUploads };
+      if (activeTab === "upload") {
+        newUploads[index].uploading = true;
+      } else {
+        newUploads.uploading = true;
+      }
+      return newUploads;
+    });
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      setUploads(prevUploads => {
+        const newUploads = activeTab === "upload" ? [...prevUploads] : { ...prevUploads };
+        if (activeTab === "upload") {
+          newUploads[index].progress = progress;
+        } else {
+          newUploads.progress = progress;
+        }
+        return newUploads;
+      });
+
+      progress += 10;
+      if (progress >= 90) {
+        clearInterval(interval);
+      }
+    }, 1000);
 
     try {
-      const response = await axios.post("http://127.0.0.1:8000/api/classify-excel/", formData, {
+      if (!userId) {
+        console.error("User ID not found in token");
+        return;
+      }
+
+      const apiEndpoint =
+        activeTab === "sales"
+          ? `/mrp/sales-upload/`
+          : `/mrp/ending-inventory-upload/${userId}/`;
+
+      await api.post(apiEndpoint, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setData(response.data);
+      setUploads(prevUploads => {
+        const newUploads = activeTab === "upload" ? [...prevUploads] : { ...prevUploads };
+        if (activeTab === "upload") {
+          newUploads[index].progress = 100;
+          newUploads[index].successMessage = "Success: Uploading Complete";
+          newUploads[index].uploading = false;
+          newUploads[index].areaId = ""; // Reset the areaId for tab 1
+        } else {
+          newUploads.progress = 100;
+          newUploads.successMessage = "Success: Uploading Complete";
+          newUploads.uploading = false;
+        }
+        return newUploads;
+      });
     } catch (err) {
+      clearInterval(interval);
       setError("Error processing file. Please try again.");
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const getTabTitle = (tabKey) => {
+    switch (tabKey) {
+      case "upload":
+        return "Upload Ending Inventory";
+      case "sales":
+        return "Upload Sales";
+      default:
+        return "Transactional";
     }
   };
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Transactional</h1>
+        {samp}
+      <h1 className="text-2xl font-bold mb-4">{getTabTitle(activeTab)}</h1>
 
-      {/* File Upload */}
-      <div className="mb-4">
-        <input
-          type="file"
-          accept=".xlsx, .xls"
-          onChange={handleFileUpload}
-          className="p-2 border rounded"
-        />
-      </div>
+      <Tab.Container
+        id="left-tabs-example"
+        defaultActiveKey="upload"
+        activeKey={activeTab}
+        onSelect={setActiveTab}
+      >
+        <Nav variant="tabs">
+          <Nav.Item>
+            <Nav.Link eventKey="upload">Upload Ending Inventory</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="sales">Upload Sales</Nav.Link>
+          </Nav.Item>
+        </Nav>
 
-      {/* Loading Indicator */}
-      {loading && <p className="text-blue-500">Processing file...</p>}
-
-      {/* Error Display */}
-      {error && <p className="text-red-500">{error}</p>}
-
-      {/* Display Results */}
-      {data.length > 0 ? (
-        <table className="table-auto w-full border-collapse border border-gray-300">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-300 p-2">Item</th>
-              <th className="border border-gray-300 p-2">Classification</th>
-              <th className="border border-gray-300 p-2">Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((item, index) => (
-              <tr key={index} className="text-center">
-                <td className="border border-gray-300 p-2">{item.TextColumn}</td>
-                <td className="border border-gray-300 p-2">{item.classification}</td>
-                <td className="border border-gray-300 p-2">{item.score}</td>
-              </tr>
+        <Tab.Content className="mt-4">
+          <Tab.Pane eventKey="upload">
+            {uploadsEndingInventory.map((upload, index) => (
+              <div key={index} className="mb-4 border p-4 rounded">
+                <div className="w-20">
+                  {upload.uploading ? (
+                    <div className="font-bold text-blue-500">
+                      {areas.find(area => area.id === Number(upload.areaId))?.location || "Uploading..."}
+                    </div>
+                  ) : (
+                    <select
+                      value={upload.areaId}
+                      onChange={(e) => handleInputChange(index, "areaId", e.target.value)}
+                      className="p-2 border rounded mb-2 w-full"
+                    >
+                      <option value="">Select Area</option>
+                      {areas.map((area) => (
+                        <option key={area.id} value={area.id}>{area.location}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                {!upload.uploading ? (
+                  <>
+                    <input
+                      type="file"
+                      accept=".xlsx, .xls"
+                      onChange={(e) => handleInputChange(index, "file", e.target.files[0])}
+                      className="p-2 border rounded mb-2 w-full"
+                    />
+                    <button
+                      onClick={() => handleUpload(index)}
+                      className="ml-2 p-2 bg-blue-500 text-black rounded w-80 mt-2"
+                    >
+                      Upload
+                    </button>
+                    {upload.successMessage && (
+                      <div className="text-green-500 mt-2">{upload.successMessage}</div>
+                    )}
+                  </>
+                ) : (
+                  <ProgressBar now={upload.progress} label={`${upload.progress}%`} visuallyHidden />
+                )}
+              </div>
             ))}
-          </tbody>
-        </table>
-      ) : (
-        <p className="text-gray-500">No data available. Upload an Excel file to get started.</p>
-      )}
+            <button
+              onClick={addUploadField}
+              className="p-2 bg-green-500 text-black rounded mt-2 w-80"
+            >
+              Add Another Upload
+            </button>
+            {error && <p className="text-red-500">{error}</p>}
+          </Tab.Pane>
+
+          <Tab.Pane eventKey="sales">
+            <div className="mb-4 border p-4 rounded">
+              {!uploadsSales.uploading ? (
+                <>
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    onChange={(e) => handleInputChange(0, "file", e.target.files[0])}
+                    className="p-2 border rounded mb-2 w-full"
+                  />
+                  <button
+                    onClick={() => handleUpload(0)}
+                    className="ml-2 p-2 bg-blue-500 text-black rounded w-80 mt-2"
+                  >
+                    Upload
+                  </button>
+                  {uploadsSales.successMessage && (
+                    <div className="text-green-500 mt-2">{uploadsSales.successMessage}</div>
+                  )}
+                </>
+              ) : (
+                <ProgressBar now={uploadsSales.progress} label={`${uploadsSales.progress}%`} visuallyHidden />
+              )}
+            </div>
+          </Tab.Pane>
+        </Tab.Content>
+      </Tab.Container>
     </div>
   );
 }
