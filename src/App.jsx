@@ -14,6 +14,7 @@ import User from './components/UserComponents/UserComponent';
 import UserRoles from './components/RoleComponents/UserRoles';
 import NotFound from './pages/NotFound';
 import Transactional from './pages/Transactional';
+import Inventory from './pages/Inventory';
 import Login from './pages/Login';
 import ContainerDetails from './pages/ContainerDetails';
 import { ModuleProvider, useModuleContext } from "./components/ControlComponents/ModuleContext";
@@ -97,18 +98,20 @@ function AppRoutes() {
               }
             />
             <Route
-              path="/mrp/"
+              path="/inventory/*"
               element={
-                
                 <ProtectedRoute>
-                <RestrictRoute modules={modules} requiredModuleSlug="mrp">
-                  <Mrp />
-                </RestrictRoute>
+                  <RestrictRoute modules={modules} requiredModuleSlug="inventory">
+                    <Routes>
+                      <Route path="/" element={<Inventory />} />
+                      <Route path="mrp/reports/:idofinventory" element={<Mrp />} />
+                    </Routes>
+                  </RestrictRoute>
                 </ProtectedRoute>
-                
               }
             />
-            
+
+
             <Route
               path="/logs/daily"
               element={
@@ -120,6 +123,7 @@ function AppRoutes() {
               }
             />
           </Route>
+
 
           {/* Other routes */}
           <Route path="/login/" element={<Login />}></Route>

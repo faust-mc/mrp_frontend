@@ -73,12 +73,11 @@ function Transactional() {
   };
 
   const handleUpload = async (index) => {
-      
     const { file, areaId } = activeTab === "upload" ? uploadsEndingInventory[index] : uploadsSales;
 
     if (!file || (activeTab === "upload" && !areaId)) {
-      setError("Please select an area and a file before uploading.");
-      return;
+        setError("⚠️ Please select an area and a file before uploading.");
+        return;
     }
 
     setError("");
@@ -86,74 +85,94 @@ function Transactional() {
     const formData = new FormData();
     formData.append("file", file);
     if (activeTab === "upload") {
-      formData.append("area_id", areaId);
+        formData.append("area_id", areaId);
     }
 
     const setUploads = activeTab === "upload" ? setUploadsEndingInventory : setUploadsSales;
-    const uploads = activeTab === "upload" ? uploadsEndingInventory : uploadsSales;
 
     setUploads(prevUploads => {
-      const newUploads = activeTab === "upload" ? [...prevUploads] : { ...prevUploads };
-      if (activeTab === "upload") {
-        newUploads[index].uploading = true;
-      } else {
-        newUploads.uploading = true;
-      }
-      return newUploads;
+        const newUploads = activeTab === "upload" ? [...prevUploads] : { ...prevUploads };
+        if (activeTab === "upload") {
+            newUploads[index].uploading = true;
+        } else {
+            newUploads.uploading = true;
+        }
+        return newUploads;
     });
 
     let progress = 0;
     const interval = setInterval(() => {
-      setUploads(prevUploads => {
-        const newUploads = activeTab === "upload" ? [...prevUploads] : { ...prevUploads };
-        if (activeTab === "upload") {
-          newUploads[index].progress = progress;
-        } else {
-          newUploads.progress = progress;
-        }
-        return newUploads;
-      });
+        setUploads(prevUploads => {
+            const newUploads = activeTab === "upload" ? [...prevUploads] : { ...prevUploads };
+            if (activeTab === "upload") {
+                newUploads[index].progress = progress;
+            } else {
+                newUploads.progress = progress;
+            }
+            return newUploads;
+        });
 
-      progress += 10;
-      if (progress >= 90) {
-        clearInterval(interval);
-      }
+        progress += 10;
+        if (progress >= 90) {
+            clearInterval(interval);
+        }
     }, 1000);
 
     try {
-      if (!userId) {
-        console.error("User ID not found in token");
-        return;
-      }
-
-      const apiEndpoint =
-        activeTab === "sales"
-          ? `/mrp/sales-upload/`
-          : `/mrp/ending-inventory-upload/${userId}/`;
-
-      await api.post(apiEndpoint, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      setUploads(prevUploads => {
-        const newUploads = activeTab === "upload" ? [...prevUploads] : { ...prevUploads };
-        if (activeTab === "upload") {
-          newUploads[index].progress = 100;
-          newUploads[index].successMessage = "Success: Uploading Complete";
-          newUploads[index].uploading = false;
-          newUploads[index].areaId = ""; // Reset the areaId for tab 1
-        } else {
-          newUploads.progress = 100;
-          newUploads.successMessage = "Success: Uploading Complete";
-          newUploads.uploading = false;
+        if (!userId) {
+            console.error("User ID not found in token");
+            return;
         }
-        return newUploads;
-      });
+
+        const apiEndpoint =
+            activeTab === "sales"
+                ? `/mrp/sales-upload/`
+                : `/mrp/ending-inventory-upload/`;
+
+        await api.post(apiEndpoint, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        clearInterval(interval);
+
+        setUploads(prevUploads => {
+            const newUploads = activeTab === "upload" ? [...prevUploads] : { ...prevUploads };
+            if (activeTab === "upload") {
+                newUploads[index] = {
+                    ...newUploads[index],
+                    progress: 100,
+                    uploading: false,
+                    successMessage: "✅ Success: Uploading Complete",
+                };
+            } else {
+                newUploads.progress = 100;
+                newUploads.uploading = false;
+                newUploads.successMessage = "✅ Success: Uploading Complete";
+            }
+            return newUploads;
+        });
     } catch (err) {
-      clearInterval(interval);
-      setError("Error processing file. Please try again.");
+        clearInterval(interval);
+
+        setUploads(prevUploads => {
+            const newUploads = activeTab === "upload" ? [...prevUploads] : { ...prevUploads };
+            if (activeTab === "upload") {
+                newUploads[index] = {
+                    ...newUploads[index],
+                    progress: 0,
+                    uploading: false,
+                    successMessage: "❌ Error: Upload failed. Please try again.",
+
+                };
+            } else {
+                newUploads.progress = 0;
+                newUploads.uploading = false;
+                newUploads.successMessage = "❌ Error: Upload failed. Please try again.";
+            }
+            return newUploads;
+        });
     }
-  };
+};
 
   const getTabTitle = (tabKey) => {
     switch (tabKey) {
@@ -212,7 +231,7 @@ function Transactional() {
                   <>
                     <input
                       type="file"
-                      accept=".xlsx, .xls"
+                      accept=".xlsx, .xls, .xlsb"
                       onChange={(e) => handleInputChange(index, "file", e.target.files[0])}
                       className="p-2 border rounded mb-2 w-full"
                     />
@@ -246,7 +265,7 @@ function Transactional() {
                 <>
                   <input
                     type="file"
-                    accept=".xlsx, .xls"
+                    accept=".xlsx, .xls, .xlsb"
                     onChange={(e) => handleInputChange(0, "file", e.target.files[0])}
                     className="p-2 border rounded mb-2 w-full"
                   />
