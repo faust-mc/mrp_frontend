@@ -17,7 +17,7 @@ function Inventory() {
         const decodedToken = jwtDecode(token);
         const extractedUserId = decodedToken.user_id;
 
-        // Fetch all areas for dropdown
+        //fetch all areas for dropdown
         const fetchAreas = async () => {
             try {
                 const response = await api.get(`/mrp/get-area-option/${extractedUserId}/`);
@@ -46,7 +46,7 @@ function Inventory() {
         }
     }, [selectedArea]);
 
-    // Function to handle row click and navigate to the report page
+    //function to handle row click and navigate to the report page
     const handleRowClick = (inventoryId) => {
         navigate(`mrp/reports/${inventoryId}`);
     };

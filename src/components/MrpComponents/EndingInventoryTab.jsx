@@ -28,9 +28,9 @@ function EndingInventoryTab() {
             {loading ? (
                 <p>Loading...</p>
             ) : (
-                <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 230px)" }}>
+                <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 238px)" }}>
                     <table className="table table-striped table-bordered">
-                        <thead className="table-dark" style={{ position: "sticky", top: 0, backgroundColor: "white" }}>
+                        <thead className="table-dark" style={{ position: "sticky", top: 0, backgroundColor: "white", boxShadow: "0px -8px 10px rgba(0, 0, 0, 0.4)" }}>
                             <tr>
                                 <th>Category</th>
                                 <th>BOS Code</th>
