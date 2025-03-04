@@ -3,16 +3,19 @@ import { useNavigate } from "react-router-dom"; // Import navigation hook
 import api from "../api"; // Import Axios instance
 import { ACCESS_TOKEN } from '../constants';
 import { jwtDecode } from "jwt-decode";
+import { ModuleProvider, useModuleContext } from "../components/ControlComponents/ModuleContext";
 
 function Inventory() {
+    const { modules, setModules, accessPermissions, setAccessPermissions } = useModuleContext();
     const token = localStorage.getItem(ACCESS_TOKEN);
+
     const navigate = useNavigate(); // Initialize navigate function
 
     const [inventoryCodes, setInventoryCodes] = useState([]);
     const [areas, setAreas] = useState([]);
     const [selectedArea, setSelectedArea] = useState("");
     const [loading, setLoading] = useState(false);
-
+    console.log(accessPermissions)
     useEffect(() => {
         const decodedToken = jwtDecode(token);
         const extractedUserId = decodedToken.user_id;

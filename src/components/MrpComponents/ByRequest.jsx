@@ -1,34 +1,38 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import api from "../../api"; // Adjust path if needed
+import api from "../../api";
 
-function ByRequest() {
-  const { idofinventory } = useParams();
+function ByRequest({ setByRequestItems, isEditable }) {  // Accept inventoryId as a prop
   const [forecast, setForecast] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [adjustmentValues, setAdjustmentValues] = useState({});
-  const [finalDeliveryValues, setFinalDeliveryValues] = useState({});
+  const [deliveryValues, setDeliveryValues] = useState({});
+  const { idofinventory } = useParams();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await api.get(`/mrp/by_request_items/`);
-        console.log(response);
-        setForecast(response.data);
+        if (!idofinventory) return;
 
-        
-        const initialAdjustments = {};
-        const initialFinalDeliveries = {};
+        console.log(idofinventory)
+        const itemsResponse = await api.get(`/mrp/by_request_items/${idofinventory}/`);
+        console.log(itemsResponse)
+        setForecast(itemsResponse.data);
 
-        response.data.forEach((item, index) => {
-          initialAdjustments[index] = 0; // Default adjustment to 0
-          initialFinalDeliveries[index] = calculateFinalDelivery(Math.ceil(item.forecast / item.bom_entry__conversion_delivery_uom), 0, item.bom_entry__bundling_size);
+        // Initialize delivery values with fetched data
+        const initialDeliveries = {};
+        itemsResponse.data.forEach((item, index) => {
+          initialDeliveries[index] = {
+            by_request_item: item.by_request_item?.id || item.id,  // Support both cases
+            first_delivery: item.first_delivery || 0,
+            second_delivery: item.second_delivery || 0,
+            third_delivery: item.third_delivery || 0
+          };
         });
 
-        setAdjustmentValues(initialAdjustments);
-        setFinalDeliveryValues(initialFinalDeliveries);
+        setDeliveryValues(initialDeliveries);
+        setByRequestItems(Object.values(initialDeliveries));  // Update parent component
       } catch (error) {
-        console.error("Error fetching forecast:", error);
+        console.error("Error fetching ByRequest items:", error);
       } finally {
         setLoading(false);
       }
@@ -37,86 +41,74 @@ function ByRequest() {
     fetchData();
   }, [idofinventory]);
 
-  const calculateFinalDelivery = (forecastValue, adjustmentValue, bundlingSize) => {
-      console.log(adjustmentValue)
-      console.log("adjustmentValue")
-      console.log(bundlingSize)
-    const totalValue = forecastValue + adjustmentValue;
-    if (totalValue >= 0) {
-      return Math.ceil(totalValue / bundlingSize) * bundlingSize;
-    }
-    return 0;
-  };
+  const handleDeliveryChange = (e, index, type) => {
+    const value = parseFloat(e.target.value) || 0;
 
-  const handleAdjustmentChange = (e, forecastValue, bundlingSize, index) => {
-    const adjustmentValue = parseFloat(e.target.value) || 0;
-
-    if (adjustmentValue > forecastValue / 2) {
-      e.target.value = adjustmentValues[index] || 0; // Revert to previous value
-      alert("Adjustment value cannot be more than 50% greater than the forecast value.");
-      return;
-    }
-
-    setAdjustmentValues((prevValues) => ({
-      ...prevValues,
-      [index]: adjustmentValue
-    }));
-
-    setFinalDeliveryValues((prevValues) => ({
-      ...prevValues,
-      [index]: calculateFinalDelivery(forecastValue, adjustmentValue, bundlingSize)
-    }));
+    setDeliveryValues((prevValues) => {
+      const updatedValues = {
+        ...prevValues,
+        [index]: {
+          ...prevValues[index],
+          [type]: value
+        }
+      };
+      setByRequestItems(Object.values(updatedValues)); // Pass updated data to MRP
+      return updatedValues;
+    });
   };
 
   return (
     <div>
-{/*       <h2>Forecast Report</h2> */}
+      <h2>By Request Items</h2>
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 230px)" }}>
-          <table className="table table-striped table-bordered responsive-table" >
-
-            <thead className="table-dark" style={{ position: "sticky", top: 0, backgroundColor: "white" }}>
-              <tr>
-                <th>Category</th>
-                <th>BOS Code</th>
-                <th>Item Description</th>
-                <th>BOS UOM</th>
-                <th>Delivery UOM</th>
-                <th>Total Weekly Request</th>
+          <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 238px)" }}>
+        <table className="table table-striped table-bordered responsive-table">
+            <thead className="table-dark" style={{ position: "sticky", top: 0, backgroundColor: "white", boxShadow: "0px -8px 10px rgba(0, 0, 0, 0.4)" }}>
+            <tr>
+              <th>Category</th>
+              <th>BOS Code</th>
+              <th>Item Description</th>
+              <th>First Delivery</th>
+              <th>Second Delivery</th>
+              <th>Third Delivery</th>
+            </tr>
+          </thead>
+          <tbody>
+            {forecast.map((item, index) => (
+              <tr key={item.id}>
+                <td>{item.by_request_item?.category || item.category}</td>
+                <td>{item.by_request_item?.bos_code || item.bos_code}</td>
+                <td>{item.by_request_item?.bos_material_description || item.bos_material_description}</td>
+                <td>
+                  <input
+                    type="number"
+                    value={deliveryValues[index]?.first_delivery || 0}
+                    onChange={(e) => handleDeliveryChange(e, index, "first_delivery")}
+                    readOnly={!isEditable}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    value={deliveryValues[index]?.second_delivery || 0}
+                    onChange={(e) => handleDeliveryChange(e, index, "second_delivery")}
+                    readOnly={!isEditable}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    value={deliveryValues[index]?.third_delivery || 0}
+                    onChange={(e) => handleDeliveryChange(e, index, "third_delivery")}
+                    readOnly={!isEditable}
+                  />
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {forecast.length > 0 ? (
-                forecast.map((item, index) => (
-                  <tr key={item.id}>
-                    <td>{item.category}</td>
-                    <td>{item.bos_code}</td>
-                    <td>{item.bos_material_description}</td>
-                    <td>{item.bos_uom}</td>
-                    <td>{item.delivery_uom}</td>
-
-
-
-                    <td>
-                      <input
-                        className="adjustment-input"
-                        type="number"
-                        value={adjustmentValues[index]}
-                        onChange={(e) => handleAdjustmentChange(e, Math.ceil(item.forecast / item.bom_entry__conversion_delivery_uom), item.bom_entry__bundling_size, index)}
-                         />
-                    </td>
-
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="text-center">No data found</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            ))}
+          </tbody>
+        </table>
         </div>
       )}
     </div>

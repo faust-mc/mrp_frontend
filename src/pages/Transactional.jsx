@@ -6,6 +6,7 @@ import { ACCESS_TOKEN } from '../constants';
 import { jwtDecode } from "jwt-decode";
 
 function Transactional() {
+  const { modules, setModules, accessPermissions, setAccessPermissions } = useModuleContext();
   const token = localStorage.getItem(ACCESS_TOKEN);
   const [uploadsEndingInventory, setUploadsEndingInventory] = useState([
     { areaId: "", file: null, progress: 0, uploading: false, successMessage: "" }
