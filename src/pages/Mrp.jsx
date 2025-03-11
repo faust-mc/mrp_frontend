@@ -25,15 +25,16 @@ function Mrp() {
     const [forAdjustmentKey, setForAdjustmentKey] = useState(0);
     const [refreshKey, setRefreshKey] = useState(0);
 
+
     const tabTitles = {
-        tab1: "Ending Inventory",
-        tab2: "Initial Replenishment",
+        tab1: "Order For Adjustment",
+        tab2: "By Request Items",
         tab3: "Forecast",
-        tab4: "Order For Adjustment",
-        tab5: "By Request Items",
+        tab4: "Ending Inventory",
+        tab5: "Initial Replenishment",
         tab6: "Items Sales"
     };
-    console.log(accessPermissions)
+
     useEffect(() => {
         const fetchInventoryData = async () => {
             try {
@@ -43,9 +44,9 @@ function Mrp() {
                 setInventoryCode(inventory_code || "Unknown Code");
                 setStatus(status);
 
-                setIsDraft(status < 3);
-                setIsEditable(status < 3);
-                setShowSubmit(status === 3); // Show submit only when status is 3
+                setIsDraft(status.status < 3);
+                setIsEditable(status.status < 3);
+                setShowSubmit(status.status === 3); // Show submit only when status is 3
             } catch (error) {
                 console.error("Error fetching inventory code:", error);
                 setInventoryCode("Error Fetching Code");
@@ -56,6 +57,46 @@ function Mrp() {
             fetchInventoryData();
         }
     }, [idofinventory, refreshKey]);
+
+
+    useEffect(() => {
+    const fetchByRequestItems = async () => {
+      try {
+        if (!idofinventory) return;
+
+        const response = await api.get(`/mrp/by_request_items/${idofinventory}/`);
+        const items = response.data;
+
+        // Initialize default values for delivery
+        const initialDeliveries = items.map((item) => {
+          const conversion = item.by_request_item?.conversion || item.conversion || 1;
+          return {
+            by_request_item: item.by_request_item?.id || item.id,
+            category: item.by_request_item?.category || item.category,
+            bos_code: item.by_request_item?.bos_code || item.bos_code,
+            bos_material_description: item.by_request_item?.bos_material_description || item.bos_material_description,
+            conversion,
+            first_delivery: item.first_delivery || 0,
+            second_delivery: item.second_delivery || 0,
+            third_delivery: item.third_delivery || 0,
+            first_qty_delivery: (item.first_delivery || 0) * conversion,
+            second_qty_delivery: (item.second_delivery || 0) * conversion,
+            third_qty_delivery: (item.third_delivery || 0) * conversion,
+          };
+        });
+
+        setByRequestItems(initialDeliveries);
+      } catch (error) {
+        console.error("Error fetching ByRequest items:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchByRequestItems();
+  }, [idofinventory, refreshKey]);
+
+
 
     const handleSave = async () => {
         const requestData = {
@@ -74,6 +115,7 @@ function Mrp() {
             setIsEditable(false);
             setIsDraft(false);
             setShowSubmit(true);
+            setRefreshKey(prevKey => prevKey + 1);
         } catch (error) {
             console.error("Error submitting data:", error);
             alert("Failed to save data.");
@@ -85,7 +127,7 @@ function Mrp() {
             await api.post(`/mrp/submit/${idofinventory}/`);
             alert("MRP submitted successfully!");
             setShowSubmit(false);
-             setRefreshKey(prevKey => prevKey + 1); // Trigger component refresh
+             setRefreshKey(prevKey => prevKey + 1);
         } catch (error) {
             console.error("Error submitting MRP:", error);
             alert("Failed to submit MRP.");
@@ -96,6 +138,7 @@ function Mrp() {
         try {
             await api.post(`/mrp/approve/${idofinventory}/`);
             alert("MRP approved successfully!");
+              setRefreshKey(prevKey => prevKey + 1);
         } catch (error) {
             console.error("Error approving MRP:", error);
             alert("Failed to approve MRP.");
@@ -103,70 +146,115 @@ function Mrp() {
     };
 
     const handleReturnForAmendment = async () => {
-        try {
-            await api.post(`/mrp/return-for-amendment/${idofinventory}/`);
-            alert("MRP returned for amendment!");
-        } catch (error) {
-            console.error("Error returning MRP for amendment:", error);
-            alert("Failed to return for amendment.");
-        }
-    };
+    const message = prompt("Enter reason for amendment:");
+
+    if (!message) {
+        alert("You must provide a reason.");
+        return;
+    }
+
+    try {
+        await api.post(`/mrp/ammend/${idofinventory}/`, { message });
+        alert("MRP returned for amendment!");
+           setRefreshKey(prevKey => prevKey + 1);
+    } catch (error) {
+        console.error("Error returning MRP for amendment:", error);
+        alert("Failed to return for amendment.");
+    }
+};
+
 
     const handleCancelEdit = () => {
         setForAdjustmentKey((prevKey) => prevKey + 1);
         setIsEditable(false);
-        setShowSubmit(status === 3); // Restore Submit button if status is 3
+        setShowSubmit(status.status === 3); // Restore Submit button if status is 3
     };
+    const canModifyInventory = accessPermissions.some(permission =>
+    permission.codename === "add_inventory" || permission.codename === "edit_inventory"
+    );
+    const canApproveInventory =  accessPermissions.some(permission =>
+        permission.codename === "approve_inventory"
+    );
+    const userCanEdit = isEditable && canModifyInventory;
 
     return (
         <div className="container mt-4">
             <div className="d-flex justify-content-between align-items-center mb-3">
-                <h1>{inventoryCode}</h1>
-                <div>
-                    {isEditable ? (
-                        <>
-                            <button className="btn btn-sm btn-primary me-2" onClick={handleSave}>
-                                Save
-                            </button>
-                            <button className="btn btn-sm btn-danger" onClick={handleCancelEdit}>
-                                Cancel
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            {status < 4 && (
-                                <button className="btn btn-sm btn-secondary me-2" onClick={() => setIsEditable(true)}>
-                                    Edit
-                                </button>
-                            )}
-                            {showSubmit && (
-                                <button className="btn btn-sm btn-success me-2" onClick={handleSubmit}>
-                                    Submit
-                                </button>
-                            )}
-                            {status === 4 && (
-                                <>
-                                    <button className="btn btn-sm btn-success me-2" onClick={handleApprove}>
-                                        Approve
-                                    </button>
-                                    <button className="btn btn-sm btn-warning" onClick={handleReturnForAmendment}>
-                                        Return for Amendment
-                                    </button>
-                                </>
-                            )}
-                        </>
-                    )}
+                <div className="d-flex align-items-center">
+                    <h1 className="mb-0">{inventoryCode}</h1>
+                    <span className="fw-bold fs-6 badge bg-info ms-2">
+                        {status ? status.status_description : "None"}
+                    </span>
+                    {status?.status === 5 && (<span className="ms-2">
+
+                            <a href={`http://localhost:5173/media/sales/CHOOKS_FARMERS_PLAZA_20250310_sales_report.xlsx`} className="btn btn-sm btn-primary" download>
+                                ⬇ Download
+                            </a>
+
+                    </span>)}
                 </div>
+
+
+{status?.status !== 1 && (
+               <div>
+    {isEditable ? (
+    <>
+        {canModifyInventory && (
+            <>
+                <button className="btn btn-sm btn-primary me-2" onClick={handleSave}>
+                    Save
+                </button>
+                <button className="btn btn-sm btn-danger" onClick={handleCancelEdit}>
+                    Cancel
+                </button>
+            </>
+        )}
+    </>
+) : (
+    <>
+        {status?.status < 4 && canModifyInventory && ( // Show Edit button only if user can modify
+            <button className="btn btn-sm btn-secondary me-2" onClick={() => setIsEditable(true)}>
+                Edit
+            </button>
+        )}
+        {showSubmit && canModifyInventory && (
+            <button className="btn btn-sm btn-success me-2" onClick={handleSubmit}>
+                Submit
+            </button>
+        )}
+        {status?.status === 4 && canApproveInventory && (
+            <>
+                <button className="btn btn-sm btn-success me-2" onClick={handleApprove}>
+                    Approve
+                </button>
+                <button className="btn btn-sm btn-warning" onClick={handleReturnForAmendment}>
+                    Return for Amendment
+                </button>
+            </>
+        )}
+    </>
+)}
+
+</div>
+)}
+
             </div>
 
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} tabNames={tabTitles} />
 
             <div className="tab-content p-3 border border-top-0">
-                {activeTab === "tab1" && <EndingInventoryTab />}
-                {activeTab === "tab2" && <InitialReplenishmentTab />}
+                {activeTab === "tab1" && <ForAdjustment key={forAdjustmentKey} setAdjustments={setAdjustments} isEditable={userCanEdit} />}
+                {activeTab === "tab2" &&
+                    <ByRequest
+                    key={forAdjustmentKey}
+                    byRequestItems={byRequestItems}
+                    setByRequestItems={setByRequestItems}
+                    isEditable={isEditable}
+                    />}
+
                 {activeTab === "tab3" && <Forecast />}
-                {activeTab === "tab4" && <ForAdjustment key={forAdjustmentKey} setAdjustments={setAdjustments} isEditable={isEditable} />}
-                {activeTab === "tab5" && <ByRequest key={forAdjustmentKey} setByRequestItems={setByRequestItems} isEditable={isEditable} />}
+                {activeTab === "tab4" && <EndingInventoryTab />}
+                {activeTab === "tab5" && <InitialReplenishmentTab />}
                 {activeTab === "tab6" && <ItemSalesTab />}
                 {!Object.keys(tabTitles).includes(activeTab) && <p>Select a tab to view data.</p>}
             </div>
@@ -175,3 +263,5 @@ function Mrp() {
 }
 
 export default Mrp;
+
+

@@ -34,10 +34,11 @@ function InitialReplenishmentTab() {
                         <thead className="table-dark" style={{ position: "sticky", top: 0, backgroundColor: "white" }}>
                             <tr>
                                 <th>ID </th>
+                                <th>POS Description</th>
                                 <th>POS Code</th>
                                 <th>Item Description</th>
                                 <th>BOS Code</th>
-                                <th>Average Daily Usage</th>
+                                <th>Ave. Daily Usage</th>
                                 <th>Daily Sales</th>
                                 <th>Weekly Usage</th>
                                 <th>Safety Stock</th>
@@ -49,6 +50,7 @@ function InitialReplenishmentTab() {
                                 initialReplenishment.map((item) => (
                                     <tr key={item.id}>
                                         <td>{item[7]}</td>
+                                        <td>{item[4]}</td>
                                         <td>{item[6]}</td>
                                         <td>{item[5]}</td>
                                         <td>{item[3]}</td>

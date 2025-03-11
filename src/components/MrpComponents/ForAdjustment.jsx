@@ -9,6 +9,7 @@ function ForAdjustment({forAdjustmentKey, setAdjustments, isEditable }) {
   const [loading, setLoading] = useState(true);
   const [adjustmentValues, setAdjustmentValues] = useState({});
   const [finalDeliveryValues, setFinalDeliveryValues] = useState({});
+  const [qtyForDeliveryValues, setQtyForDeliveryValues] = useState({}); // NEW STATE
 
   useEffect(() => {
     const fetchData = async () => {
@@ -18,27 +19,33 @@ function ForAdjustment({forAdjustmentKey, setAdjustments, isEditable }) {
 
         const initialAdjustments = {};
         const initialFinalDeliveries = {};
+        const initialQtyForDelivery = {};
         const adjustmentData = [];
 
         response.data.forEach((item, index) => {
           const forecastValue = Math.ceil(item.forecast / (item.bom_entry__conversion_delivery_uom || 1));
 
-          // Pre-fill values from API
+          //pre-fill values from api
           const adjustment = item.first_adjustment || 0;
           const finalDelivery = item.first_final_delivery || calculateFinalDelivery(forecastValue, adjustment, item.bom_entry__bundling_size);
+          const qtyForDelivery = finalDelivery * (item.bom_entry__conversion_delivery_uom || 1);
 
           initialAdjustments[index] = adjustment;
           initialFinalDeliveries[index] = finalDelivery;
+          initialQtyForDelivery[index] = qtyForDelivery;
 
           adjustmentData.push({
             bom_entry__id: item.bom_entry__id,
             adjustment: adjustment,
             final_delivery: finalDelivery,
+            quantity_for_delivery: qtyForDelivery,
+
           });
         });
 
         setAdjustmentValues(initialAdjustments);
         setFinalDeliveryValues(initialFinalDeliveries);
+        setQtyForDeliveryValues(initialQtyForDelivery);
         setAdjustments(adjustmentData);
       } catch (error) {
         console.error("Error fetching forecast:", error);
@@ -55,9 +62,8 @@ function ForAdjustment({forAdjustmentKey, setAdjustments, isEditable }) {
     return totalValue >= 0 ? Math.ceil(totalValue / bundlingSize) * bundlingSize : 0;
   };
 
-  const handleAdjustmentChange = (e, forecastValue, bundlingSize, index, bom_entry__id) => {
-      console.log(e.target.value)
-      console.log("--1-")
+  const handleAdjustmentChange = (e, forecastValue, bundlingSize, index, bom_entry__id, conversion) => {
+
     const adjustmentValue = e.target.value? parseFloat(e.target.value):0;
 
     if (adjustmentValue > forecastValue / 2) {
@@ -67,6 +73,7 @@ function ForAdjustment({forAdjustmentKey, setAdjustments, isEditable }) {
     }
 
     const newFinalDelivery = calculateFinalDelivery(forecastValue, adjustmentValue, bundlingSize);
+    const newQtyForDelivery = newFinalDelivery * conversion;
 
     setAdjustmentValues((prevValues) => ({
       ...prevValues,
@@ -78,12 +85,19 @@ function ForAdjustment({forAdjustmentKey, setAdjustments, isEditable }) {
       [index]: newFinalDelivery,
     }));
 
+    setQtyForDeliveryValues((prevValues) => ({
+      ...prevValues,
+      [index]: newQtyForDelivery,
+    }));
+
     setAdjustments((prevAdjustments) => {
       const updatedAdjustments = [...prevAdjustments];
       updatedAdjustments[index] = {
         bom_entry__id,
         adjustment: adjustmentValue,
         final_delivery: newFinalDelivery,
+        quantity_for_delivery: newQtyForDelivery,
+
       };
       return updatedAdjustments;
     });
@@ -95,7 +109,7 @@ function ForAdjustment({forAdjustmentKey, setAdjustments, isEditable }) {
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 238px)" }}>
+        <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 239px)" }}>
           <table className="table table-striped table-bordered responsive-table">
             <thead className="table-dark" style={{ position: "sticky", top: 0, backgroundColor: "white", boxShadow: "0px -8px 10px rgba(0, 0, 0, 0.4)" }}>
               <tr>
@@ -108,45 +122,57 @@ function ForAdjustment({forAdjustmentKey, setAdjustments, isEditable }) {
                 <th>Forecast</th>
                 <th>Adjustment</th>
                 <th>For Final Delivery</th>
+                <th>QTY FOR DELIVERY (BOS UOM)</th>
               </tr>
             </thead>
             <tbody>
               {forecast.length > 0 ? (
-                forecast.map((item, index) => (
-                  <tr key={item.id}>
-                    <td>{item.bom_entry__bos_code}</td>
-                    <td>{item.bom_entry__bos_material_description}</td>
-                    <td>{item.bom_entry__bundling_size}</td>
-                    <td>{item.bom_entry__conversion_delivery_uom || 1}</td>
-                    <td>{item.forecast}</td>
-                    <td>{(item.forecast / (item.bom_entry__conversion_delivery_uom || 1)).toFixed(2)}</td>
-                    <td>{Math.ceil(item.forecast / (item.bom_entry__conversion_delivery_uom || 1))}</td>
-                    <td>
-                      <input
-                        className="adjustment-input"
-                        type="number"
-                        value={adjustmentValues[index]? adjustmentValues[index]:0 }
-                        onChange={(e) =>
-                          handleAdjustmentChange(
-                            e,
-                            Math.ceil(item.forecast / (item.bom_entry__conversion_delivery_uom || 1)),
-                            item.bom_entry__bundling_size,
-                            index,
-                            item.bom_entry__id
-                          )
-                        }
-                        style={{ width: "60px" }}
-                      readOnly={!isEditable}
-                      />
-                    </td>
-                    <td>
-                      <input type="number" value={finalDeliveryValues[index]?finalDeliveryValues[index]:0 } readOnly style={{ width: "60px" }} />
-                    </td>
-                  </tr>
-                ))
+                forecast.map((item, index) => {
+                  const convertedForecast = Math.ceil(item.forecast / (item.bom_entry__conversion_delivery_uom || 1));
+                  const finalDelivery = finalDeliveryValues[index] || 0;
+                  const qtyForDelivery = finalDelivery * (item.bom_entry__conversion_delivery_uom || 1); // NEW CALCULATION
+
+                  return (
+                    <tr key={item.id}>
+                      <td>{item.bom_entry__bos_code}</td>
+                      <td>{item.bom_entry__bos_material_description}</td>
+                      <td>{item.bom_entry__bundling_size}</td>
+                      <td>{item.bom_entry__conversion_delivery_uom || 1}</td>
+                      <td>{item.forecast}</td>
+                      <td>{(item.forecast / (item.bom_entry__conversion_delivery_uom || 1)).toFixed(2)}</td>
+                      <td>{convertedForecast}</td>
+                      <td>
+                        <input
+                          className="adjustment-input"
+                          type="number"
+                          value={adjustmentValues[index] ? adjustmentValues[index] : 0}
+                          onChange={(e) =>
+                            handleAdjustmentChange(
+                              e,
+                              convertedForecast,
+                              item.bom_entry__bundling_size,
+                              index,
+                              item.bom_entry__id,
+                              item.bom_entry__conversion_delivery_uom || 1,
+
+                            )
+                          }
+                          style={{ width: "60px" }}
+                          readOnly={!isEditable}
+                        />
+                      </td>
+                      <td>
+                        <input type="number" value={finalDelivery} readOnly style={{ width: "60px" }} />
+                      </td>
+                      <td>
+                        <input type="number" value={qtyForDelivery} readOnly style={{ width: "80px" }} /> {/* NEW FIELD */}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan="9" className="text-center">No data found</td>
+                  <td colSpan="10" className="text-center">No data found</td>
                 </tr>
               )}
             </tbody>
