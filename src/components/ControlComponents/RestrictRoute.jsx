@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 function RestrictRoute({ children, modules, requiredModuleSlug }) {
+
   const navigate = useNavigate();
  
   useEffect(() => {
@@ -9,7 +10,7 @@ function RestrictRoute({ children, modules, requiredModuleSlug }) {
     if (modules.length === 0) {
       return;
     }
-    // update this in future to check also if submodule
+    //update this in future to check also if submodule
     const hasModuleAccess = modules.some(module => module.slug === requiredModuleSlug);
 
     if (!hasModuleAccess) {

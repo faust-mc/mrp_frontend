@@ -6,7 +6,9 @@ import EndingInventoryTab from "../components/MrpComponents/EndingInventoryTab";
 import InitialReplenishmentTab from "../components/MrpComponents/InitialReplenishmentTab";
 import ItemSalesTab from "../components/MrpComponents/ItemSalesTab";
 import Forecast from "../components/MrpComponents/Forecast";
+import ApprovedAdjustment from "../components/MrpComponents/ApprovedAdjustment";
 import ForAdjustment from "../components/MrpComponents/ForAdjustment";
+
 import ByRequest from "../components/MrpComponents/ByRequest";
 import { ModuleProvider, useModuleContext } from "../components/ControlComponents/ModuleContext";
 
@@ -14,6 +16,7 @@ import { ModuleProvider, useModuleContext } from "../components/ControlComponent
 function Mrp() {
     const { modules, setModules, accessPermissions, setAccessPermissions } = useModuleContext();
     const { idofinventory } = useParams();
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("tab1");
     const [inventoryCode, setInventoryCode] = useState("");
     const [adjustments, setAdjustments] = useState([]);
@@ -24,6 +27,9 @@ function Mrp() {
     const [status, setStatus] = useState(null); // Track status
     const [forAdjustmentKey, setForAdjustmentKey] = useState(0);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [numberOfRequest, setNumberOfRequest] = useState(0);
+    const [numberOfItems, setNumberOfItems] = useState(0);
+    const [deliveryMultiplier, setDeliveryMultiplier] = useState(null)
 
 
     const tabTitles = {
@@ -39,10 +45,16 @@ function Mrp() {
         const fetchInventoryData = async () => {
             try {
                 const response = await api.get(`/mrp/get-inventory-code/${idofinventory}/`);
-                const { status, inventory_code } = response.data;
+
+                const { status, inventory_code,  number_of_request, number_of_items, delivery_multiplier} = response.data;
 
                 setInventoryCode(inventory_code || "Unknown Code");
                 setStatus(status);
+                setNumberOfRequest(number_of_request || 1);
+                setNumberOfItems(number_of_items || 1);
+                setDeliveryMultiplier(delivery_multiplier ?? [1, 0, 0]);
+
+
 
                 setIsDraft(status.status < 3);
                 setIsEditable(status.status < 3);
@@ -243,13 +255,31 @@ function Mrp() {
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} tabNames={tabTitles} />
 
             <div className="tab-content p-3 border border-top-0">
-                {activeTab === "tab1" && <ForAdjustment key={forAdjustmentKey} setAdjustments={setAdjustments} isEditable={userCanEdit} />}
+                {activeTab === "tab1" && (
+                    status?.status > 4 ? (
+                        <ApprovedAdjustment key={forAdjustmentKey} adjustments={adjustments} />
+                    ) : (
+                        <ForAdjustment
+                            key={forAdjustmentKey}
+                            setAdjustments={setAdjustments}
+                            isEditable={userCanEdit}
+
+                            numberOfItems={numberOfItems}
+                            deliveryMultiplier={deliveryMultiplier?deliveryMultiplier:[1,0,0]}
+
+                        />
+                    )
+                )}
+
                 {activeTab === "tab2" &&
                     <ByRequest
                     key={forAdjustmentKey}
                     byRequestItems={byRequestItems}
                     setByRequestItems={setByRequestItems}
+                    loading = {loading}
+                    setLoading = {setLoading}
                     isEditable={isEditable}
+                     numberOfRequest={numberOfRequest}
                     />}
 
                 {activeTab === "tab3" && <Forecast />}

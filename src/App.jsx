@@ -13,6 +13,7 @@ import Mrp from './pages/Mrp';
 import User from './components/UserComponents/UserComponent';
 import UserRoles from './components/RoleComponents/UserRoles';
 import NotFound from './pages/NotFound';
+import AreaConfig from './pages/AreaConfig';
 import Transactional from './pages/Transactional';
 import Inventory from './pages/Inventory';
 import Login from './pages/Login';
@@ -72,6 +73,19 @@ function AppRoutes() {
                   </RestrictRoute>
                 </ProtectedRoute>
                 
+              }
+            />
+
+            <Route
+              path="/masterdata/location_config/branch/"
+              element={
+
+                <ProtectedRoute>
+                <RestrictRoute modules={modules} requiredModuleSlug="masterdata">
+                  <AreaConfig />
+                  </RestrictRoute>
+                </ProtectedRoute>
+
               }
             />
             

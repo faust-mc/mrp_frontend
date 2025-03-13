@@ -15,7 +15,7 @@ function Inventory() {
     const [areas, setAreas] = useState([]);
     const [selectedArea, setSelectedArea] = useState("");
     const [loading, setLoading] = useState(false);
-    console.log(accessPermissions)
+
     useEffect(() => {
         const decodedToken = jwtDecode(token);
         const extractedUserId = decodedToken.user_id;

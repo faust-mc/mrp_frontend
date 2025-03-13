@@ -11,7 +11,7 @@ function ItemSalesTab() {
         const fetchData = async () => {
             try {
                 const response = await api.get(`/mrp/sales-report/${idofinventory}/`);
-                console.log(response)
+                
                 setSalesReport(response.data);
             } catch (error) {
                 console.error("Error fetching sales report:", error);

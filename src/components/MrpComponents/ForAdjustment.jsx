@@ -1,52 +1,54 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import api from "../../api"; // Adjust path if needed
+import api from "../../api";
 
-function ForAdjustment({forAdjustmentKey, setAdjustments, isEditable }) {
+function ForAdjustment({ setAdjustments, isEditable, numberOfItems,
+                            deliveryMultiplier }) {
 
   const { idofinventory } = useParams();
   const [forecast, setForecast] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adjustmentValues, setAdjustmentValues] = useState({});
-  const [finalDeliveryValues, setFinalDeliveryValues] = useState({});
-  const [qtyForDeliveryValues, setQtyForDeliveryValues] = useState({}); // NEW STATE
+
+   const calculateFinalDelivery = (forecastValue, adjustmentValue, bundlingSize, multiplier) => {
+
+    const totalValue = (forecastValue*multiplier) + adjustmentValue;
+    return totalValue >= 0 ? Math.ceil(totalValue / bundlingSize) * bundlingSize : 0;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        if (!idofinventory) return;
+
         const response = await api.get(`/mrp/forecast/${idofinventory}/`);
         setForecast(response.data);
 
         const initialAdjustments = {};
-        const initialFinalDeliveries = {};
-        const initialQtyForDelivery = {};
-        const adjustmentData = [];
-
         response.data.forEach((item, index) => {
-          const forecastValue = Math.ceil(item.forecast / (item.bom_entry__conversion_delivery_uom || 1));
+          const conversion = item.bom_entry__conversion_delivery_uom || 1;
+          const forecastValue = Math.ceil(item.forecast / conversion);
 
-          //pre-fill values from api
-          const adjustment = item.first_adjustment || 0;
-          const finalDelivery = item.first_final_delivery || calculateFinalDelivery(forecastValue, adjustment, item.bom_entry__bundling_size);
-          const qtyForDelivery = finalDelivery * (item.bom_entry__conversion_delivery_uom || 1);
+          initialAdjustments[index] = {
+              bom_entry__id: item.bom_entry__id,
+              conversion,
+              first_adjustment: item.first_adjustment || 0,
+              second_adjustment: item.second_adjustment || 0,
+              third_adjustment: item.third_adjustment || 0,
 
-          initialAdjustments[index] = adjustment;
-          initialFinalDeliveries[index] = finalDelivery;
-          initialQtyForDelivery[index] = qtyForDelivery;
+              first_final_delivery: item.first_final_delivery || calculateFinalDelivery(forecastValue, item.first_adjustment, item.bom_entry__bundling_size, deliveryMultiplier?.[0] || 1),
+              second_final_delivery: item.second_final_delivery || calculateFinalDelivery(forecastValue, item.second_adjustment, item.bom_entry__bundling_size, deliveryMultiplier?.[1] || 0),
+              third_final_delivery: item.third_final_delivery || calculateFinalDelivery(forecastValue, item.third_adjustment, item.bom_entry__bundling_size, deliveryMultiplier?.[2] || 0),
 
-          adjustmentData.push({
-            bom_entry__id: item.bom_entry__id,
-            adjustment: adjustment,
-            final_delivery: finalDelivery,
-            quantity_for_delivery: qtyForDelivery,
+              first_qty_delivery: ((item.first_final_delivery || calculateFinalDelivery(forecastValue, item.first_adjustment, item.bom_entry__bundling_size, deliveryMultiplier?.[0] || 1)) * conversion),
+              second_qty_delivery: ((item.second_final_delivery || calculateFinalDelivery(forecastValue, item.second_adjustment, item.bom_entry__bundling_size, deliveryMultiplier?.[1] || 0)) * conversion),
+              third_qty_delivery: ((item.third_final_delivery || calculateFinalDelivery(forecastValue, item.third_adjustment, item.bom_entry__bundling_size, deliveryMultiplier?.[2] || 0)) * conversion),
+            };
 
-          });
         });
 
         setAdjustmentValues(initialAdjustments);
-        setFinalDeliveryValues(initialFinalDeliveries);
-        setQtyForDeliveryValues(initialQtyForDelivery);
-        setAdjustments(adjustmentData);
+        setAdjustments(Object.values(initialAdjustments));
       } catch (error) {
         console.error("Error fetching forecast:", error);
       } finally {
@@ -55,127 +57,189 @@ function ForAdjustment({forAdjustmentKey, setAdjustments, isEditable }) {
     };
 
     fetchData();
-  }, [idofinventory, setAdjustments]);
+  }, [idofinventory, setAdjustments, deliveryMultiplier]);
 
-  const calculateFinalDelivery = (forecastValue, adjustmentValue, bundlingSize) => {
-    const totalValue = forecastValue + adjustmentValue;
-    return totalValue >= 0 ? Math.ceil(totalValue / bundlingSize) * bundlingSize : 0;
-  };
 
-  const handleAdjustmentChange = (e, forecastValue, bundlingSize, index, bom_entry__id, conversion) => {
 
-    const adjustmentValue = e.target.value? parseFloat(e.target.value):0;
+  const handleAdjustmentChange = (e, index, field) => {
+  const value = parseFloat(e.target.value) || 0;
+  const conversion = adjustmentValues[index]?.conversion || 1;
+  const forecastValue = Math.ceil(forecast[index].forecast / conversion);
+  const bundlingSize = forecast[index].bom_entry__bundling_size;
 
-    if (adjustmentValue > forecastValue / 2) {
-      e.target.value = adjustmentValues[index] || 0;
-      alert("Adjustment value cannot be more than 50% greater than the forecast value.");
-      return;
-    }
+  // ✅ Calculate the total adjustment for the row
+  const currentFirst = field === "first_adjustment" ? value : adjustmentValues[index]?.first_adjustment || 0;
+  const currentSecond = field === "second_adjustment" ? value : adjustmentValues[index]?.second_adjustment || 0;
+  const currentThird = field === "third_adjustment" ? value : adjustmentValues[index]?.third_adjustment || 0;
 
-    const newFinalDelivery = calculateFinalDelivery(forecastValue, adjustmentValue, bundlingSize);
-    const newQtyForDelivery = newFinalDelivery * conversion;
+  const totalAdjustment = currentFirst + currentSecond + currentThird;
+  const maxAdjustment = Math.ceil(forecastValue * 0.5); // ±50% of forecast
 
-    setAdjustmentValues((prevValues) => ({
+  // ✅ Enforce row-level validation
+  if (Math.abs(totalAdjustment) > maxAdjustment) {
+    alert(`Total adjustments cannot exceed ±${maxAdjustment}`);
+    return;
+  }
+
+  setAdjustmentValues((prevValues) => {
+    const updatedValues = {
       ...prevValues,
-      [index]: adjustmentValue,
-    }));
+      [index]: {
+        ...prevValues[index],
+        [field]: value,
+        first_final_delivery: calculateFinalDelivery(forecastValue, currentFirst, bundlingSize,deliveryMultiplier[0]),
 
-    setFinalDeliveryValues((prevValues) => ({
-      ...prevValues,
-      [index]: newFinalDelivery,
-    }));
+        second_final_delivery: calculateFinalDelivery(forecastValue, currentSecond, bundlingSize,deliveryMultiplier[1]),
 
-    setQtyForDeliveryValues((prevValues) => ({
-      ...prevValues,
-      [index]: newQtyForDelivery,
-    }));
+        third_final_delivery: calculateFinalDelivery(forecastValue, currentThird, bundlingSize,deliveryMultiplier[2]),
 
-    setAdjustments((prevAdjustments) => {
-      const updatedAdjustments = [...prevAdjustments];
-      updatedAdjustments[index] = {
-        bom_entry__id,
-        adjustment: adjustmentValue,
-        final_delivery: newFinalDelivery,
-        quantity_for_delivery: newQtyForDelivery,
+        first_qty_delivery: calculateFinalDelivery(forecastValue, currentFirst, bundlingSize,deliveryMultiplier[0]) * conversion,
 
-      };
-      return updatedAdjustments;
-    });
-  };
+        second_qty_delivery:  calculateFinalDelivery(forecastValue, currentSecond, bundlingSize,deliveryMultiplier[1]) * conversion,
+
+        third_qty_delivery:  calculateFinalDelivery(forecastValue, currentThird, bundlingSize,deliveryMultiplier[2]) * conversion,
+      },
+    };
+
+    setAdjustments(Object.values(updatedValues));
+    return updatedValues;
+  });
+};
+
+
+
 
   return (
     <div>
-      <h2>Forecast Report</h2>
+      <h2>For Adjustment</h2>
       {loading ? (
         <p>Loading...</p>
       ) : (
         <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 239px)" }}>
           <table className="table table-striped table-bordered responsive-table">
             <thead className="table-dark" style={{ position: "sticky", top: 0, backgroundColor: "white", boxShadow: "0px -8px 10px rgba(0, 0, 0, 0.4)" }}>
-              <tr>
-                <th>BOS Code</th>
-                <th>Item Description</th>
-                <th>Bundling</th>
-                <th>Conversion</th>
-                <th>Forecasted Weekly Order</th>
-                <th>Converted Forecast</th>
-                <th>Forecast</th>
-                <th>Adjustment</th>
-                <th>For Final Delivery</th>
-                <th>QTY FOR DELIVERY (BOS UOM)</th>
-              </tr>
-            </thead>
+  <tr>
+    <th>BOS Code</th>
+    <th>Item Description</th>
+    <th>Bundling</th>
+    <th>Conversion</th>
+    <th>Converted Weekly Forecast</th>
+    <th>1st Forecast</th>
+
+    {numberOfItems >= 1 && (
+      <>
+        <th>1st Adjustment</th>
+        <th>1st Final Delivery</th>
+        <th>1st QTY Delivery</th>
+      </>
+    )}
+
+    {numberOfItems >= 2 && (
+      <>
+        <th>For 2nd Forecast</th>
+        <th>2nd Adjustment</th>
+        <th>2nd Final Delivery</th>
+        <th>2nd QTY Delivery</th>
+      </>
+    )}
+
+    {numberOfItems >= 3 && (
+      <>
+        <th>For 3rd Forecast</th>
+        <th>3rd Adjustment</th>
+        <th>3rd Final Delivery</th>
+        <th>3rd QTY Delivery</th>
+      </>
+    )}
+  </tr>
+</thead>
+
             <tbody>
-              {forecast.length > 0 ? (
-                forecast.map((item, index) => {
-                  const convertedForecast = Math.ceil(item.forecast / (item.bom_entry__conversion_delivery_uom || 1));
-                  const finalDelivery = finalDeliveryValues[index] || 0;
-                  const qtyForDelivery = finalDelivery * (item.bom_entry__conversion_delivery_uom || 1); // NEW CALCULATION
+  {forecast.length > 0 ? (
+    forecast.map((item, index) => {
+      const adjustedValues = adjustmentValues[index] || {};
+      const weekly_forecast = Math.ceil(item.forecast / (adjustedValues.conversion || 1))
+      return (
+        <tr key={item.id}>
+          <td>{item.bom_entry__bos_code}</td>
+          <td>{item.bom_entry__bos_material_description}</td>
+          <td>{item.bom_entry__bundling_size}</td>
+          <td>{adjustedValues.conversion || 1}</td>
+          <td>{weekly_forecast}</td>
+          <td>{Math.ceil(weekly_forecast * deliveryMultiplier[0])}</td>
+          {/* First Adjustment */}
+          {numberOfItems >= 1 && (
+            <>
+              <td>
+                <input
+                  type="number"
+                  value={adjustedValues.first_adjustment || 0}
+                  onChange={(e) => handleAdjustmentChange(e, index, "first_adjustment")}
+                  style={{ width: "60px" }}
+                  readOnly={!isEditable}
+                />
+              </td>
+              <td>
+                <input type="number" value={adjustedValues.first_final_delivery || 0} readOnly style={{ width: "60px" }} />
+              </td>
+              <td>
+                <input type="number" value={adjustedValues.first_qty_delivery || 0} readOnly style={{ width: "80px" }} />
+              </td>
+            </>
+          )}
 
-                  return (
-                    <tr key={item.id}>
-                      <td>{item.bom_entry__bos_code}</td>
-                      <td>{item.bom_entry__bos_material_description}</td>
-                      <td>{item.bom_entry__bundling_size}</td>
-                      <td>{item.bom_entry__conversion_delivery_uom || 1}</td>
-                      <td>{item.forecast}</td>
-                      <td>{(item.forecast / (item.bom_entry__conversion_delivery_uom || 1)).toFixed(2)}</td>
-                      <td>{convertedForecast}</td>
-                      <td>
-                        <input
-                          className="adjustment-input"
-                          type="number"
-                          value={adjustmentValues[index] ? adjustmentValues[index] : 0}
-                          onChange={(e) =>
-                            handleAdjustmentChange(
-                              e,
-                              convertedForecast,
-                              item.bom_entry__bundling_size,
-                              index,
-                              item.bom_entry__id,
-                              item.bom_entry__conversion_delivery_uom || 1,
+          {/* Second Adjustment (Only if numberOfItems >= 2) */}
+          {numberOfItems >= 2 && (
+            <>
+             <td>{Math.ceil(weekly_forecast * deliveryMultiplier[1])}</td>
+              <td>
+                <input
+                  type="number"
+                  value={adjustedValues.second_adjustment || 0}
+                  onChange={(e) => handleAdjustmentChange(e, index, "second_adjustment")}
+                  style={{ width: "60px" }}
+                  readOnly={!isEditable}
+                />
+              </td>
+              <td>
+                <input type="number" value={adjustedValues.second_final_delivery || 0} readOnly style={{ width: "60px" }} />
+              </td>
+              <td>
+                <input type="number" value={adjustedValues.second_qty_delivery || 0} readOnly style={{ width: "80px" }} />
+              </td>
+            </>
+          )}
 
-                            )
-                          }
-                          style={{ width: "60px" }}
-                          readOnly={!isEditable}
-                        />
-                      </td>
-                      <td>
-                        <input type="number" value={finalDelivery} readOnly style={{ width: "60px" }} />
-                      </td>
-                      <td>
-                        <input type="number" value={qtyForDelivery} readOnly style={{ width: "80px" }} /> {/* NEW FIELD */}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="10" className="text-center">No data found</td>
-                </tr>
-              )}
-            </tbody>
+          {/* Third Adjustment (Only if numberOfItems >= 3) */}
+          {numberOfItems >= 3 && (
+            <>
+              <td>
+                <input
+                  type="number"
+                  value={adjustedValues.third_adjustment || 0}
+                  onChange={(e) => handleAdjustmentChange(e, index, "third_adjustment")}
+                  style={{ width: "60px" }}
+                  readOnly={!isEditable}
+                />
+              </td>
+              <td>
+                <input type="number" value={adjustedValues.third_final_delivery || 0} readOnly style={{ width: "60px" }} />
+              </td>
+              <td>
+                <input type="number" value={adjustedValues.third_qty_delivery || 0} readOnly style={{ width: "80px" }} />
+              </td>
+            </>
+          )}
+        </tr>
+      );
+    })
+  ) : (
+    <tr>
+      <td colSpan="14" className="text-center">No data found</td>
+    </tr>
+  )}
+</tbody>
+
           </table>
         </div>
       )}
