@@ -7,9 +7,11 @@ import InitialReplenishmentTab from "../components/MrpComponents/InitialReplenis
 import ItemSalesTab from "../components/MrpComponents/ItemSalesTab";
 import Forecast from "../components/MrpComponents/Forecast";
 import ApprovedAdjustment from "../components/MrpComponents/ApprovedAdjustment";
-import ForAdjustment from "../components/MrpComponents/ForAdjustment";
 
+import ForAdjustment from "../components/MrpComponents/ForAdjustment";
+import ApprovedByRequest from "../components/MrpComponents/ApprovedByRequest";
 import ByRequest from "../components/MrpComponents/ByRequest";
+import ConsolidatedWeeklyOrder from "../components/MrpComponents/ConsolidatedWeeklyOrder";
 import { ModuleProvider, useModuleContext } from "../components/ControlComponents/ModuleContext";
 
 
@@ -28,31 +30,34 @@ function Mrp() {
     const [forAdjustmentKey, setForAdjustmentKey] = useState(0);
     const [refreshKey, setRefreshKey] = useState(0);
     const [numberOfRequest, setNumberOfRequest] = useState(0);
+    const [approvedDate, setApprovedDate] = useState(null);
     const [numberOfItems, setNumberOfItems] = useState(0);
     const [deliveryMultiplier, setDeliveryMultiplier] = useState(null)
 
 
     const tabTitles = {
-        tab1: "Order For Adjustment",
-        tab2: "By Request Items",
+        tab1: status?.status > 4 ? "Approved Adjustment":"Order For Adjustment",
+        tab2: status?.status > 4 ? "Approved By Request Items":"By Request Items",
         tab3: "Forecast",
         tab4: "Ending Inventory",
         tab5: "Initial Replenishment",
-        tab6: "Items Sales"
+        tab6: "Items Sales",
+        ...(status?.status > 4 && { tab7: "Consolidated Weekly Order" })
     };
 
     useEffect(() => {
         const fetchInventoryData = async () => {
             try {
                 const response = await api.get(`/mrp/get-inventory-code/${idofinventory}/`);
-
-                const { status, inventory_code,  number_of_request, number_of_items, delivery_multiplier} = response.data;
+                console.log(response)
+                const { status, inventory_code,  number_of_request, number_of_items, delivery_multiplier, approved_at} = response.data;
 
                 setInventoryCode(inventory_code || "Unknown Code");
                 setStatus(status);
                 setNumberOfRequest(number_of_request || 1);
                 setNumberOfItems(number_of_items || 1);
                 setDeliveryMultiplier(delivery_multiplier ?? [1, 0, 0]);
+                setApprovedDate(approved_at);
 
 
 
@@ -111,9 +116,22 @@ function Mrp() {
 
 
     const handleSave = async () => {
+
+        let editMessage = "";
+
+        if (status?.status === 5) {
+            editMessage = prompt("Enter details about the changes made:");
+            if (!editMessage) {
+                alert("You must provide details about the changes.");
+                return;
+            }
+        }
         const requestData = {
             adjustment: adjustments,
-            by_request_items: byRequestItems
+            by_request_items: byRequestItems,
+            number_of_request:numberOfRequest,
+            number_of_items:numberOfItems,
+            ...(status?.status === 5 && { edit_message: editMessage })
         };
 
         try {
@@ -207,57 +225,83 @@ function Mrp() {
                 </div>
 
 
-{status?.status !== 1 && (
-               <div>
-    {isEditable ? (
-    <>
-        {canModifyInventory && (
+        {status?.status !== 1 && (
+            <div>
+                {isEditable ? (
+                    <>
+                        {canModifyInventory && (
+                            <>
+                                <button className="btn btn-sm btn-primary me-2" onClick={handleSave}>
+                                    Save
+                                </button>
+                                <button className="btn btn-sm btn-danger" onClick={handleCancelEdit}>
+                                    Cancel
+                                </button>
+                            </>
+                        )}
+                    </>
+                ) : (
             <>
-                <button className="btn btn-sm btn-primary me-2" onClick={handleSave}>
-                    Save
-                </button>
-                <button className="btn btn-sm btn-danger" onClick={handleCancelEdit}>
-                    Cancel
-                </button>
-            </>
-        )}
-    </>
-) : (
-    <>
-        {status?.status < 4 && canModifyInventory && ( // Show Edit button only if user can modify
-            <button className="btn btn-sm btn-secondary me-2" onClick={() => setIsEditable(true)}>
-                Edit
-            </button>
-        )}
-        {showSubmit && canModifyInventory && (
-            <button className="btn btn-sm btn-success me-2" onClick={handleSubmit}>
-                Submit
-            </button>
-        )}
-        {status?.status === 4 && canApproveInventory && (
-            <>
-                <button className="btn btn-sm btn-success me-2" onClick={handleApprove}>
-                    Approve
-                </button>
-                <button className="btn btn-sm btn-warning" onClick={handleReturnForAmendment}>
-                    Return for Amendment
-                </button>
-            </>
-        )}
-    </>
-)}
+                {status?.status < 4 && canModifyInventory && ( // Show Edit button only if user can modify
+                    <button className="btn btn-sm btn-secondary me-2" onClick={() => setIsEditable(true)}>
+                        Edit
+                    </button>
+                )}
+                {showSubmit && canModifyInventory && (
+                    <button className="btn btn-sm btn-success me-2" onClick={handleSubmit}>
+                        Submit
+                    </button>
+                )}
+                {status?.status === 4 && canApproveInventory && (
+                    <>
+                        <button className="btn btn-sm btn-success me-2" onClick={handleApprove}>
+                            Approve
+                        </button>
+                        <button className="btn btn-sm btn-warning" onClick={handleReturnForAmendment}>
+                            Return for Amendment
+                        </button>
+                    </>
+                )}
+                {status?.status === 5 && canModifyInventory && approvedDate && (() => {
+                    const currentDate = new Date();
+                    const approvedDeadline = new Date(approvedDate);
+                    const limitDays = Math.max(numberOfRequest, numberOfItems);
 
-</div>
-)}
+
+                    approvedDeadline.setDate(approvedDeadline.getDate() + limitDays + 1);
+                    approvedDeadline.setHours(22, 0, 0, 0);
+
+
+                    return currentDate <= approvedDeadline ? (
+                        <button className="btn btn-sm btn-warning me-2" onClick={() => setIsEditable(true)}>
+                            Emergency Adjustment
+                        </button>
+                    ) : null;
+                })()}
+
+
+                        </>
+                    )}
+                </div>
+            )}
+
 
             </div>
 
             <Tabs activeTab={activeTab} setActiveTab={setActiveTab} tabNames={tabTitles} />
 
             <div className="tab-content p-3 border border-top-0">
-                {activeTab === "tab1" && (
+               {activeTab === "tab1" && (
                     status?.status > 4 ? (
-                        <ApprovedAdjustment key={forAdjustmentKey} adjustments={adjustments} />
+                        <ApprovedAdjustment
+                         key={forAdjustmentKey}
+                            setAdjustments={setAdjustments}
+                            isEditable={userCanEdit}
+
+                            numberOfItems={numberOfItems}
+                            deliveryMultiplier={deliveryMultiplier?deliveryMultiplier:[1,0,0]}
+                            approvedDate={approvedDate}
+                         />
                     ) : (
                         <ForAdjustment
                             key={forAdjustmentKey}
@@ -267,12 +311,15 @@ function Mrp() {
                             numberOfItems={numberOfItems}
                             deliveryMultiplier={deliveryMultiplier?deliveryMultiplier:[1,0,0]}
 
+
                         />
                     )
                 )}
 
-                {activeTab === "tab2" &&
-                    <ByRequest
+
+                {activeTab === "tab2" && (
+                     status?.status > 4 ? (
+                        <ApprovedByRequest
                     key={forAdjustmentKey}
                     byRequestItems={byRequestItems}
                     setByRequestItems={setByRequestItems}
@@ -280,12 +327,27 @@ function Mrp() {
                     setLoading = {setLoading}
                     isEditable={isEditable}
                      numberOfRequest={numberOfRequest}
-                    />}
+                      approvedDate={approvedDate}
+                    />
+                    ) : (
+                        <ByRequest
+                    key={forAdjustmentKey}
+                    byRequestItems={byRequestItems}
+                    setByRequestItems={setByRequestItems}
+                    loading = {loading}
+                    setLoading = {setLoading}
+                    isEditable={isEditable}
+                     numberOfRequest={numberOfRequest}
+                    />
+                    )
+                    )}
+
 
                 {activeTab === "tab3" && <Forecast />}
                 {activeTab === "tab4" && <EndingInventoryTab />}
                 {activeTab === "tab5" && <InitialReplenishmentTab />}
                 {activeTab === "tab6" && <ItemSalesTab />}
+                {activeTab === "tab7" && <ConsolidatedWeeklyOrder/>}
                 {!Object.keys(tabTitles).includes(activeTab) && <p>Select a tab to view data.</p>}
             </div>
         </div>

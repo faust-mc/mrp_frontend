@@ -66,13 +66,14 @@ function ForAdjustment({ setAdjustments, isEditable, numberOfItems,
   const conversion = adjustmentValues[index]?.conversion || 1;
   const forecastValue = Math.ceil(forecast[index].forecast / conversion);
   const bundlingSize = forecast[index].bom_entry__bundling_size;
-
+  console.log(value)
   // ✅ Calculate the total adjustment for the row
   const currentFirst = field === "first_adjustment" ? value : adjustmentValues[index]?.first_adjustment || 0;
   const currentSecond = field === "second_adjustment" ? value : adjustmentValues[index]?.second_adjustment || 0;
   const currentThird = field === "third_adjustment" ? value : adjustmentValues[index]?.third_adjustment || 0;
 
   const totalAdjustment = currentFirst + currentSecond + currentThird;
+  console.log(currentThird)
   const maxAdjustment = Math.ceil(forecastValue * 0.5); // ±50% of forecast
 
   // ✅ Enforce row-level validation
@@ -213,10 +214,11 @@ function ForAdjustment({ setAdjustments, isEditable, numberOfItems,
           {/* Third Adjustment (Only if numberOfItems >= 3) */}
           {numberOfItems >= 3 && (
             <>
+            <td>{Math.ceil(weekly_forecast * deliveryMultiplier[2])}</td>
               <td>
                 <input
                   type="number"
-                  value={adjustedValues.third_adjustment || 0}
+                  value={numberOfItems < 3 ? 0 || adjustedValues.third_adjustment : 0}
                   onChange={(e) => handleAdjustmentChange(e, index, "third_adjustment")}
                   style={{ width: "60px" }}
                   readOnly={!isEditable}

@@ -2,10 +2,39 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import api from "../../api";
 
-function ByRequest({ setByRequestItems, loading, setLoading, isEditable, numberOfRequest }) {
+function ByRequest({ setByRequestItems, loading, setLoading, isEditable, numberOfRequest, approvedDate }) {
   const [forecast, setForecast] = useState([]);
   const [deliveryValues, setDeliveryValues] = useState({});
+  const [isFirstAdjustmentEditable, setIsFirstAdjustmentEditable] = useState(false);
+  const [isSecondAdjustmentEditable, setIsSecondAdjustmentEditable] = useState(false);
+  const [isThirdAdjustmentEditable, setIsThirdAdjustmentEditable] = useState(false);
   const { idofinventory } = useParams();
+
+  useEffect(() => {
+    if (approvedDate) {
+      const approvalDateTime = new Date(approvedDate);
+
+      // First Adjustment: Editable until 10 PM, 1 day after approval
+      const firstDeadline = new Date(approvalDateTime);
+      firstDeadline.setDate(approvalDateTime.getDate() + 1);
+      firstDeadline.setHours(22, 0, 0, 0); // 10 PM
+
+      // Second Adjustment: Editable until 10 PM, 2 days after approval
+      const secondDeadline = new Date(approvalDateTime);
+      secondDeadline.setDate(approvalDateTime.getDate() + 2);
+      secondDeadline.setHours(22, 0, 0, 0); // 10 PM
+
+      // Third Adjustment: Editable until 10 PM, 5 days after approval
+      const thirdDeadline = new Date(approvalDateTime);
+      thirdDeadline.setDate(approvalDateTime.getDate() + 4);
+      thirdDeadline.setHours(22, 0, 0, 0); // 10 PM
+
+      const now = new Date();
+      setIsFirstAdjustmentEditable(now <= firstDeadline);
+      setIsSecondAdjustmentEditable(now <= secondDeadline);
+      setIsThirdAdjustmentEditable(now <= thirdDeadline);
+    }
+  }, [approvedDate]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,7 +71,6 @@ function ByRequest({ setByRequestItems, loading, setLoading, isEditable, numberO
 
     fetchData();
   }, [idofinventory, numberOfRequest]);
-
 
   const handleDeliveryChange = (e, index, type) => {
     const value = parseFloat(e.target.value) || 0;
@@ -100,7 +128,7 @@ function ByRequest({ setByRequestItems, loading, setLoading, isEditable, numberO
                           type="number"
                           value={deliveryValues[index]?.first_delivery || 0}
                           onChange={(e) => handleDeliveryChange(e, index, "first_delivery")}
-                          readOnly={!isEditable}
+                           readOnly={!isEditable || !isFirstAdjustmentEditable}
                           style={{ width: "50px" }}
                         />
                       </td>
@@ -121,7 +149,7 @@ function ByRequest({ setByRequestItems, loading, setLoading, isEditable, numberO
                           type="number"
                           value={deliveryValues[index]?.second_delivery || 0}
                           onChange={(e) => handleDeliveryChange(e, index, "second_delivery")}
-                          readOnly={!isEditable}
+                          readOnly={!isEditable || !isSecondAdjustmentEditable}
                           style={{ width: "50px" }}
                         />
                       </td>
@@ -142,7 +170,7 @@ function ByRequest({ setByRequestItems, loading, setLoading, isEditable, numberO
                           type="number"
                           value={deliveryValues[index]?.third_delivery || 0}
                           onChange={(e) => handleDeliveryChange(e, index, "third_delivery")}
-                          readOnly={!isEditable}
+                          readOnly={!isEditable || !isThirdAdjustmentEditable}
                           style={{ width: "50px" }}
                         />
                       </td>
