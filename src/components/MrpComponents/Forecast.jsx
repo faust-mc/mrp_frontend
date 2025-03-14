@@ -11,7 +11,6 @@ function Forecast() {
     const fetchData = async () => {
       try {
         const response = await api.get(`/mrp/forecast/${idofinventory}/`);
-        console.log(response);
         setForecast(response.data);
       } catch (error) {
         console.error("Error fetching forecast:", error);

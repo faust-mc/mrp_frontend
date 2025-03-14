@@ -49,7 +49,7 @@ function Mrp() {
         const fetchInventoryData = async () => {
             try {
                 const response = await api.get(`/mrp/get-inventory-code/${idofinventory}/`);
-                console.log(response)
+
                 const { status, inventory_code,  number_of_request, number_of_items, delivery_multiplier, approved_at} = response.data;
 
                 setInventoryCode(inventory_code || "Unknown Code");
@@ -84,7 +84,7 @@ function Mrp() {
         const response = await api.get(`/mrp/by_request_items/${idofinventory}/`);
         const items = response.data;
 
-        // Initialize default values for delivery
+        //initialize default values for delivery
         const initialDeliveries = items.map((item) => {
           const conversion = item.by_request_item?.conversion || item.conversion || 1;
           return {

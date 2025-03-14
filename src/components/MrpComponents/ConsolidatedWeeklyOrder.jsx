@@ -11,7 +11,6 @@ function ConsolidatedWeeklyOrder() {
     const fetchData = async () => {
       try {
         const response = await api.get(`/mrp/consolidated/${idofinventory}/`);
-        console.log(response.data);
         setConsolidatedOrders(response.data);
       } catch (error) {
         console.error("Error fetching consolidated orders:", error);

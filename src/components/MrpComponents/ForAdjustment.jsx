@@ -66,14 +66,14 @@ function ForAdjustment({ setAdjustments, isEditable, numberOfItems,
   const conversion = adjustmentValues[index]?.conversion || 1;
   const forecastValue = Math.ceil(forecast[index].forecast / conversion);
   const bundlingSize = forecast[index].bom_entry__bundling_size;
-  console.log(value)
+
   // ✅ Calculate the total adjustment for the row
   const currentFirst = field === "first_adjustment" ? value : adjustmentValues[index]?.first_adjustment || 0;
   const currentSecond = field === "second_adjustment" ? value : adjustmentValues[index]?.second_adjustment || 0;
   const currentThird = field === "third_adjustment" ? value : adjustmentValues[index]?.third_adjustment || 0;
 
   const totalAdjustment = currentFirst + currentSecond + currentThird;
-  console.log(currentThird)
+
   const maxAdjustment = Math.ceil(forecastValue * 0.5); // ±50% of forecast
 
   // ✅ Enforce row-level validation
